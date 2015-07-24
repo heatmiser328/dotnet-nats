@@ -6,7 +6,15 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats
 {
-    interface INATS
+    public interface INATS
     {
+        bool Connect(string url);
+        bool Connect(string[] urls);
+        void Close();
+        void Subscribe(string topic, Action handler);
+        void Unsubscribe(string topic);
+        void Publish(string topic, string data);
+        void Publish(string topic, byte[] data);
+        void Flush();
     }
 }

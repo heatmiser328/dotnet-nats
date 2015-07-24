@@ -6,39 +6,20 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats
 {
-    public class TransportConnectionArgs : EventArgs
-    {
-        public TransportConnectionArgs(bool connected, bool reconnected) { Connected = connected; Reconnected = reconnected; }
-        public bool Connected {get; private set;}
-        public bool Reconnected {get; private set;}
-    }
-
-    public class TransportErrorArgs : EventArgs
-    {
-        public TransportErrorArgs(Exception ex) { Exception = ex; }
-        public Exception Exception { get; private set; }
-    }
-
-    public class TransportDataArgs : EventArgs
-    {
-        public TransportDataArgs(byte[] data, int size) { Data = data; Size = size; }
-        public byte[] Data { get; private set; }
-        public int Size { get; private set; }
-    }
-
     public interface ITransport
     {
-		event EventHandler<TransportConnectionArgs> Connected;
-		event EventHandler<TransportConnectionArgs> Reconnected;
-		event EventHandler<TransportConnectionArgs> Disconnected;
-		event EventHandler<TransportErrorArgs> Error;
-		event EventHandler<TransportDataArgs> Sent;
-        event EventHandler<TransportDataArgs> Received;
+		event EventHandler<bool> Connected;
+		event EventHandler<bool> Reconnected;
+		event EventHandler<bool> Disconnected;
+		event EventHandler<Exception> Error;
+		event EventHandler<int> Sent;
+        event EventHandler<SocketDataArgs> Received;
 		
 		Task<bool> Open(string address = null, int port = 0);
         Task<bool> Close();
-        Task<bool> Send(string data);
-        Task<bool> Send(byte[] data);
-        Task<bool> Flush();
+        Task<int> Send(string data);
+        Task<int> Send(byte[] data);
+        Task<int> Flush();
+        Task<byte[]> Receive();
     }
 }

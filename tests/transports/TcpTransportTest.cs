@@ -18,9 +18,13 @@ namespace transports
     {        
         MockTcpServer _server;
         ITransport _client;
-        public TcpTransportTest()
-        {                        
-            _server = new MockTcpServer();
+        ILog _log;
+
+        public TcpTransportTest(ITestOutputHelper output)
+        {
+            _log = new MockLog(output);
+            _server = new MockTcpServer(_log);
+            _log.Debug("TcpTransportTest: Start mock server");
             _server.Start();
             _client = new TcpTransport("127.0.0.1", MockTcpServer.cPort);            
         }
