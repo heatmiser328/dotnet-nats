@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-nats", "dotnet-nats\dotnet-nats.csproj", "{B76AB78D-629D-408E-8D20-6B5795B434D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tests", "tests\tests.csproj", "{536467D5-D632-4DA1-B175-E229592407A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{D48E14B7-6846-4A39-946E-656A21504BF2}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\packages.config = .nuget\packages.config
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-nats-cli", "dotnet-nats-cli\dotnet-nats-cli.csproj", "{CB84156A-6966-407E-8A1B-0D852D53834A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A4D8D7C0-B64D-4445-8B54-BCC9064B99A8}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-sockets", "..\dotnet-sockets\dotnet-sockets\dotnet-sockets.csproj", "{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B76AB78D-629D-408E-8D20-6B5795B434D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B76AB78D-629D-408E-8D20-6B5795B434D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B76AB78D-629D-408E-8D20-6B5795B434D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B76AB78D-629D-408E-8D20-6B5795B434D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{536467D5-D632-4DA1-B175-E229592407A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{536467D5-D632-4DA1-B175-E229592407A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{536467D5-D632-4DA1-B175-E229592407A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{536467D5-D632-4DA1-B175-E229592407A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CB84156A-6966-407E-8A1B-0D852D53834A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB84156A-6966-407E-8A1B-0D852D53834A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB84156A-6966-407E-8A1B-0D852D53834A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB84156A-6966-407E-8A1B-0D852D53834A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
