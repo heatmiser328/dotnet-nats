@@ -19,6 +19,7 @@ namespace dotnet_nats
         IDictionary<string, object> _opts;
         Dictionary<string, Subscription> _subscriptions;
         IServer _server;
+        bool _closing;
 
         public NATS(IServerFactory factory, IDictionary<string,object> opts, ILog log)
         {
@@ -51,27 +52,49 @@ namespace dotnet_nats
 
         public bool Connect()
         {
-            if (_server == null)
-                _server = nextServer();
-            if (_server == null)
+            try
             {
-                _log.Warn("Failed to retrieve a server from the queue");
-                return false;
-            }
-            _log.Info("Connecting to Server @ {0}", _server.URL);
-            _server.Transport.Open();            
+                if (_server == null)
+                    _server = nextServer();
+                if (_server == null)
+                {
+                    _log.Warn("Failed to retrieve a server from the queue");
+                    return false;
+                }
+                _log.Info("Connecting to Server @ {0}", _server.URL);
+                _server.Transport.Open();
 
-            return true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Failed to connect to server", ex);
+                throw;
+            }
         }
 
         public void Close()
         {
-            if (_server != null)
+            try
+            {            
+                if (_server != null)
+                {
+                    _log.Info("Disconnecting from Server @ {0}", _server.URL);
+                    _closing = true;
+                    _server.Transport.Close();
+                }            
+            }
+            catch (Exception ex)
             {
-                _log.Info("Disconnecting from Server @ {0}", _server.URL);
-                _server.Transport.Close();
+                _log.Error("Failed to connect to server", ex);
+                throw;
+            }
+            finally
+            {
+                _closing = false;
                 _server = null;
-            }            
+                _itr.Reset();
+            }
         }
 
         public void Subscribe(string subject, Action<string> handler)
@@ -166,6 +189,7 @@ namespace dotnet_nats
             };
             s.Transport.Disconnected += (sender, b) =>
             {
+                if (_closing) return;
                 _log.Warn("Disconnected from server @ {0}. Reconnecting...", s.URL);                
                 new Action(() => { Connect(); }).ExecuteAfter(getOption<int>("reconnectDelay"));
             };

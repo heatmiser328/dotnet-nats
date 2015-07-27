@@ -120,5 +120,32 @@ namespace tests
         }
 
 
+        [Fact]
+        public void Close()
+        {
+            _transport
+                .WhenForAnyArgs(x => x.Open())
+                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+            _transport
+                .WhenForAnyArgs(x => x.Close())
+                .Do(x => { _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false)); });
+
+            _server.Connected.Returns(false, true);
+            INATS nats = new NATS(_factory, _opts, _log);
+            nats.ShouldNotBe(null);
+            nats.Servers.ShouldBe(1);
+            nats.Connected.ShouldBe(false);
+            nats.Connect().ShouldBe(true);            
+            nats.Connected.ShouldBe(true);
+            _transport.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+
+            nats.Close();
+
+            _transport.Received(1).Open();
+            _transport.Received(1).Send(Arg.Is<string>(cConnect));
+            _transport.Received(1).Close();            
+        }
+
     }
 }
