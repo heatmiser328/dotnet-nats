@@ -30,7 +30,8 @@ namespace tests
             _servers = new List<IServer>();
             _log = Substitute.For<ILog>();
             _transport = Substitute.For<ITransport>();
-            _server = Substitute.For<IServer>();           
+            _server = Substitute.For<IServer>();
+            _server.URL.Returns(cURL);
             _server.Transport.Returns(_transport);
             _servers.Add(_server);
             _factory = Substitute.For<IServerFactory>();
@@ -51,9 +52,8 @@ namespace tests
             nats.Connected.ShouldBe(false);
             nats.Connect().ShouldBe(true);            
             nats.Connected.ShouldBe(true);
-            // this checks subscriptions, not events being raised to the subscribers!
-            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();            
-            _transport.Received().Open();
+            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received().Open();            
             _transport.Received().Send(Arg.Is<string>(cConnect));
         }
 
@@ -69,8 +69,8 @@ namespace tests
             nats.Connected.ShouldBe(false);
             nats.Connect().ShouldBe(false);
             nats.Connected.ShouldBe(false);
-            _transport.DidNotReceive().Open();
             _transport.DidNotReceive().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();            
+            _transport.DidNotReceive().Open();            
             _transport.DidNotReceive().Send(Arg.Any<string>());            
         }
 
@@ -78,20 +78,47 @@ namespace tests
         public void Connect_Fail()
         {            
             _server.Connected.Returns(false);
+            _transport
+                .WhenForAnyArgs(x => x.Open())
+                .Do(x => { _transport.Error += Raise.EventWith(new dotnet_sockets.EventArgs<Exception>(new System.Net.Sockets.SocketException(10061))); });
             //_transport.WhenForAnyArgs(x => x.Open()).Do(x => { throw new System.Net.Sockets.SocketException(10061); });
-            _transport.Error += Raise.EventWith(new dotnet_sockets.EventArgs<Exception>(new System.Net.Sockets.SocketException(10061)));            
-
+                        
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
             nats.Connect().ShouldBe(true);
             nats.Connected.ShouldBe(false);
-            _transport.Received().Open();
-            _transport.DidNotReceive().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();            
-            _transport.DidNotReceive().Send(Arg.Any<string>());
-            _transport.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();            
+            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();
+            _transport.Received().Open();            
+            _log.Received().Error("Error with server @ {0}", cURL, Arg.Any<dotnet_sockets.EventArgs<Exception>>());
+            _transport.DidNotReceive().Send(Arg.Any<string>());            
         }
+
+        //[Fact]
+        public void Reconnect()
+        {
+            _transport
+                .WhenForAnyArgs(x => x.Open())
+                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+
+            _server.Connected.Returns(false, true);
+            INATS nats = new NATS(_factory, _opts, _log);
+            nats.ShouldNotBe(null);
+            nats.Servers.ShouldBe(1);
+            nats.Connected.ShouldBe(false);
+            nats.Connect().ShouldBe(true);
+            _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false));
+
+            nats.Connected.ShouldBe(true);
+            _transport.Received(2).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received(2).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received(2).Open();            
+            _transport.Received(2).Send(Arg.Is<string>(cConnect));            
+            _log.Received(1).Warn("Disconnected from server @ {0}. Reconnecting...", cURL);
+        }
+
 
     }
 }

@@ -69,7 +69,7 @@ namespace dotnet_nats
             };
             _server.Transport.Error += (sender, err) =>
             {
-
+                _log.Error("Error with server @ {0}", _server.URL, err);
             };
             _server.Transport.ReceivedData += (sender, args) =>
             {
