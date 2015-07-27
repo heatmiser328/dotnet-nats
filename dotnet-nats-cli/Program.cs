@@ -10,6 +10,18 @@ namespace dotnet_nats_cli
     {
         static void Main(string[] args)
         {
+            try
+            {
+                new CLI().Run(args);
+            }
+            catch(Exception ex)
+            {
+                while (ex != null)
+                {
+                    Console.Error.WriteLine(ex.Message);
+                    ex = ex.InnerException;
+                }                    
+            }            
         }
     }
 }
