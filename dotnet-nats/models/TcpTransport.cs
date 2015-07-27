@@ -9,6 +9,6 @@ namespace dotnet_nats
     public class TcpTransport : dotnet_sockets.AsyncSocketClient, ITransport
     {
         public TcpTransport() : base() {}
-        public TcpTransport(string address, int port, ILog log) : base(address, port, log) {}
+        public TcpTransport(string address, int port) : base(address, port) {}
     }
 }

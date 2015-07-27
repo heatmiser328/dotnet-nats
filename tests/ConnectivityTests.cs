@@ -19,14 +19,14 @@ namespace tests
         IServer _server;
         ITransport _transport;
         ICollection<IServer> _servers;
-        IDictionary<string, object> _opts;
+        Options _opts;
         const string cURL = "nats://domain:4222";
         const string cConnect = @"CONNECT {""verbose"":false,""pedantic"":false}" + "\r\n";
 
         public ConnectivityTests()
         {
-            _opts = new Dictionary<string, object>();
-            _opts.Add("url", cURL);
+            _opts = new Options();            
+            _opts.uris = new string[] {cURL};
             _servers = new List<IServer>();
             _log = Substitute.For<ILog>();
             _transport = Substitute.For<ITransport>();
@@ -61,7 +61,7 @@ namespace tests
         public void Connect_NoServer()
         {
             _server.Connected.Returns(false);
-            _opts.Clear();
+            _opts.uris = new string[] { };
             _servers.Clear();
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);

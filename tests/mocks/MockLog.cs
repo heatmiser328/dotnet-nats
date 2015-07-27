@@ -16,6 +16,11 @@ namespace mocks
 
         public string Level {get;set;}
 
+        public void Log(string level, string msg, Exception ex = null, params object[] args)
+        {
+            output.WriteLine(msg, args);
+        }
+
         public void Trace(string msg, params object[] args)
         {
             output.WriteLine(msg, args);

@@ -36,8 +36,8 @@ namespace tests
         [Fact]
         public void Instantiate_SingleServer()
         {
-            IDictionary<string, object> opts = new Dictionary<string, object>();
-            opts.Add("url", cURL);
+            Options opts = new Options();
+            opts.uris = new string[] { cURL };
 
             INATS nats = new NATS(_factory, opts, _log);            
             nats.ShouldNotBe(null);
@@ -48,8 +48,8 @@ namespace tests
         [Fact]
         public void Instantiate_MultipleServer()
         {
-            IDictionary<string, object> opts = new Dictionary<string, object>();
-            opts.Add("urls", new string[] {cURL,cURL,cURL});
+            Options opts = new Options();
+            opts.uris = new string[] { cURL, cURL, cURL };
             _servers.Add(_server);
             _servers.Add(_server);
 

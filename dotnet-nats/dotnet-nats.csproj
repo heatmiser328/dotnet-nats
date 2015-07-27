@@ -47,8 +47,12 @@
     <Compile Include="interfaces\IServerFactory.cs" />
     <Compile Include="interfaces\ITransport.cs" />
     <Compile Include="interfaces\ITransportFactory.cs" />
-    <Compile Include="log\ConsoleLog.cs" />
+    <Compile Include="log\ConsoleLog.cs">
+      <SubType>
+      </SubType>
+    </Compile>
     <Compile Include="models\Extensions.cs" />
+    <Compile Include="models\Options.cs" />
     <Compile Include="models\Payload.cs" />
     <Compile Include="models\Server.cs" />
     <Compile Include="models\TcpTransport.cs" />

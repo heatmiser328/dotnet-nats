@@ -16,31 +16,30 @@ namespace dotnet_nats
         ILog _log;
         ICollection<IServer> _servers;
         IEnumerator<IServer> _itr;
-        IDictionary<string, object> _opts;
-        Dictionary<string, Subscription> _subscriptions;
+        Options _opts;
+        IDictionary<string, Subscription> _subscriptions;
         IServer _server;
         bool _closing;
 
-        public NATS(IServerFactory factory, IDictionary<string,object> opts, ILog log)
+        public NATS(IServerFactory factory, Options opts, ILog log)
         {
             _factory = factory;            
             _log = log;
             _subscriptions = new Dictionary<string, Subscription>();
-            _opts = new Dictionary<string, object>();
-            initOptions(opts);
+            _opts = opts;            
             loadServers();
         }
-        public NATS(IServerFactory factory, IDictionary<string, object> opts) : this(factory, opts, new log.ConsoleLog()) { }                
+        public NATS(IServerFactory factory, Options opts) : this(factory, opts, new log.ConsoleLog()) { }                
         #endregion
 
         #region Connect
-        public static INATS Connect(IDictionary<string, object> opts, ILog log)
+        public static INATS Connect(Options opts, ILog log)
         {            
             INATS nats = new NATS(new ServerFactory(new TransportFactory(log), log), opts, log);
             nats.Connect();
             return nats;
         }
-        public static INATS Connect(IDictionary<string, object> opts)
+        public static INATS Connect(Options opts)
         {
             return NATS.Connect(opts, new log.ConsoleLog());
         }
@@ -131,8 +130,8 @@ namespace dotnet_nats
         {
             StringBuilder cmd = new StringBuilder();
             cmd.Append("CONNECT {");
-            cmd.AppendFormat(@"""verbose"":{0}", this.verbose.ToString().ToLower());
-            cmd.AppendFormat(@",""pedantic"":{0}", this.pedantic.ToString().ToLower());
+            cmd.AppendFormat(@"""verbose"":{0}", _opts.verbose.ToString().ToLower());
+            cmd.AppendFormat(@",""pedantic"":{0}", _opts.pedantic.ToString().ToLower());
             cmd.Append("}");
             //cmd.Append(System.Environment.NewLine);
             cmd.Append("\r\n");
@@ -140,41 +139,10 @@ namespace dotnet_nats
         }
         #endregion
 
-        #region options
-        bool verbose { get { return getOption<bool>("verbose"); } }
-        bool pedantic { get { return getOption<bool>("pedantic"); } }
-
-        void initOptions(IDictionary<string, object> opts)
-        {
-            if (opts.ContainsKey("urls"))
-            {
-                _opts["uris"] = (string[])opts["urls"];
-            }
-            if (opts.ContainsKey("uris"))
-            {
-                _opts["uris"] = (string[])opts["uris"];
-            }
-            if (opts.ContainsKey("url"))
-            {
-                _opts["uris"] = new string[] { opts["url"].ToString() };
-            }
-            if (opts.ContainsKey("uri"))
-            {
-                _opts["uris"] = new string[] { opts["uri"].ToString() };
-            }
-        }
-        T getOption<T>(string opt)
-        {
-            if (!_opts.ContainsKey(opt))
-                return default(T);
-            return (T)Convert.ChangeType(_opts[opt], typeof(T));
-        }
-        #endregion
-
         #region servers
         void loadServers()
         {            
-            _servers = _factory.New(getOption<string[]>("uris"));
+            _servers = _factory.New(_opts.uris);
             _servers.ToList().ForEach(connectServer);            
             _itr = _servers.GetEnumerator();            
             _server = nextServer();
@@ -191,7 +159,7 @@ namespace dotnet_nats
             {
                 if (_closing) return;
                 _log.Warn("Disconnected from server @ {0}. Reconnecting...", s.URL);                
-                new Action(() => { Connect(); }).ExecuteAfter(getOption<int>("reconnectDelay"));
+                new Action(() => { Connect(); }).ExecuteAfter(_opts.reconnectDelay);
             };
             s.Transport.Error += (sender, err) =>
             {

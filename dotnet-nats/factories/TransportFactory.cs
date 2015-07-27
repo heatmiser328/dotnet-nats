@@ -16,7 +16,12 @@ namespace dotnet_nats
 
         public ITransport New(string address, int port)
         {
-            return new TcpTransport(address, port, _log);
+            ITransport t = new TcpTransport(address, port);
+            t.Log += (sender, args) =>
+            {
+                _log.Log(args.Level, args.Message, args.Exception, args.Args);
+            };
+            return t;
         }
     }
 }
