@@ -196,3 +196,5 @@ FakesAssemblies/
 *.opt
 
 *.pst
+
+dotnet-sockets/

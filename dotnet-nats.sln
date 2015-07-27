@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-nats", "dotnet-nats\dotnet-nats.csproj", "{B76AB78D-629D-408E-8D20-6B5795B434D6}"
 EndProject
@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-sockets", "..\dotnet-sockets\dotnet-sockets\dotnet-sockets.csproj", "{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-sockets", "dotnet-sockets\dotnet-sockets\dotnet-sockets.csproj", "{B37D2876-3FC6-40A3-8F23-51AB4EBFE02D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

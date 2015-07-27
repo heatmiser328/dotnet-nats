@@ -11,34 +11,48 @@ namespace dotnet_nats
 {
     public class NATS : INATS, IDisposable
     {
+        #region Constructors
+        IServerFactory _factory;
         ILog _log;
-        Queue<Server> _servers;
-        Dictionary<string, Action<string>> _subscriptions;
-        Server _server;
+        ICollection<IServer> _servers;
+        IEnumerator<IServer> _itr;
+        IDictionary<string, object> _opts;
+        Dictionary<string, Subscription> _subscriptions;
+        IServer _server;
 
-        public NATS(string[] urls, ILog log)
+        public NATS(IServerFactory factory, IDictionary<string,object> opts, ILog log)
         {
+            _factory = factory;            
             _log = log;
-            _servers = new Queue<Server>();
-            _subscriptions = new Dictionary<string, Action<string>>();
-            foreach (string url in urls)
-            {
-                if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                {
-                    _log.Warn("Unrecognized server url: {0}. Skipping...", url);
-                    continue;
-                }
-                _servers.Enqueue(new Server(url, _log));
-            }                
+            _subscriptions = new Dictionary<string, Subscription>();
+            _opts = new Dictionary<string, object>();
+            initOptions(opts);
+            loadServers();
         }
-        public NATS(string[] urls) : this(urls, new log.ConsoleLog()) {}
-        public NATS(string url, ILog log) : this(new string[] {url}, log) {}
-        public NATS(string url) : this(new string[] { url }) {}
+        public NATS(IServerFactory factory, IDictionary<string, object> opts) : this(factory, opts, new log.ConsoleLog()) { }                
+        #endregion
+
+        #region Connect
+        public static INATS Connect(IDictionary<string, object> opts, ILog log)
+        {            
+            INATS nats = new NATS(new ServerFactory(new TransportFactory(log), log), opts, log);
+            nats.Connect();
+            return nats;
+        }
+        public static INATS Connect(IDictionary<string, object> opts)
+        {
+            return NATS.Connect(opts, new log.ConsoleLog());
+        }
+        #endregion
 
         #region INATS
+        public int Servers { get { return _servers != null ? _servers.Count : 0; } }
+        public bool Connected { get { return _server != null && _server.Connected; } }
+
         public bool Connect()
         {
-            _server = _servers.Dequeue();
+            if (_server == null)
+                _server = NextServer();
             if (_server == null)
             {
                 _log.Warn("Failed to retrieve a server from the queue");
@@ -46,7 +60,8 @@ namespace dotnet_nats
             }
             _server.Transport.Connected += (sender, b) =>
             {
-
+                _log.Debug("Connected to server @ {0}", _server.URL);
+                sendConnect();
             };
             _server.Transport.Disconnected += (sender, b) =>
             {
@@ -56,7 +71,7 @@ namespace dotnet_nats
             {
 
             };
-            _server.Transport.Received += (sender, args) =>
+            _server.Transport.ReceivedData += (sender, args) =>
             {
 
             };
@@ -65,7 +80,7 @@ namespace dotnet_nats
 
             };
             _log.Info("Connecting to Server @ {0}", _server.URL);
-            _server.Transport.Open();
+            _server.Transport.Open();            
 
             return true;
         }
@@ -80,16 +95,16 @@ namespace dotnet_nats
             }            
         }
 
-        public void Subscribe(string topic, Action<string> handler)
+        public void Subscribe(string subject, Action<string> handler)
         {
-            _subscriptions[topic] = handler;
+            _subscriptions[subject] = new Subscription(subject, handler);
             // send to server
         }
 
-        public void Unsubscribe(string topic)
+        public void Unsubscribe(string subject)
         {
-            if (_subscriptions.ContainsKey(topic))
-                _subscriptions.Remove(topic);
+            if (_subscriptions.ContainsKey(subject))
+                _subscriptions.Remove(subject);
             // send to server
         }
 
@@ -109,10 +124,77 @@ namespace dotnet_nats
         }
         #endregion
 
+        #region send
+        void sendConnect()
+        {
+            StringBuilder cmd = new StringBuilder();
+            cmd.Append("CONNECT {");
+            cmd.AppendFormat(@"""verbose"":{0}", this.verbose.ToString().ToLower());
+            cmd.AppendFormat(@",""pedantic"":{0}", this.pedantic.ToString().ToLower());
+            cmd.Append("}");
+            //cmd.Append(System.Environment.NewLine);
+            cmd.Append("\r\n");
+            _server.Transport.Send(cmd.ToString());
+        }
+        #endregion
+
+        #region options
+        bool verbose { get { return getOption<bool>("verbose"); } }
+        bool pedantic { get { return getOption<bool>("pedantic"); } }
+
+        void initOptions(IDictionary<string, object> opts)
+        {
+            if (opts.ContainsKey("urls"))
+            {
+                _opts["uris"] = (string[])opts["urls"];
+            }
+            if (opts.ContainsKey("uris"))
+            {
+                _opts["uris"] = (string[])opts["uris"];
+            }
+            if (opts.ContainsKey("url"))
+            {
+                _opts["uris"] = new string[] { opts["url"].ToString() };
+            }
+            if (opts.ContainsKey("uri"))
+            {
+                _opts["uris"] = new string[] { opts["uri"].ToString() };
+            }
+        }
+        T getOption<T>(string opt)
+        {
+            if (!_opts.ContainsKey(opt))
+                return default(T);
+            return (T)Convert.ChangeType(_opts[opt], typeof(T));
+        }
+        #endregion
+
+        #region servers
+        void loadServers()
+        {            
+            _servers = _factory.New(getOption<string[]>("uris"));
+            _itr = _servers.GetEnumerator();
+            _server = NextServer();
+        }
+
+        // need to expand this for clustering: basically, use a server until its maximum re-connect attempts is reached, then move to the next
+        // eventually swing around to the first...
+        IServer NextServer()
+        {
+            if (!_itr.MoveNext())
+            {
+                _itr.Reset();
+                _itr.MoveNext();
+            }
+            return _itr.Current;            
+        }
+
+        #endregion
+
         #region IDisposable
         public void Dispose()
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
         #endregion
     }

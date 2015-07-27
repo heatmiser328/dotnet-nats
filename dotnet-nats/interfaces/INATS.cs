@@ -8,9 +8,12 @@ namespace dotnet_nats
 {
     public interface INATS
     {
+        int Servers { get; }
+        bool Connected { get; }
+
         bool Connect();        
         void Close();
-        void Subscribe(string topic, Action handler);
+        void Subscribe(string topic, Action<string> handler);
         void Unsubscribe(string topic);
         void Publish(string topic, string data);
         void Publish(string topic, byte[] data);

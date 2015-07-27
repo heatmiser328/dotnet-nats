@@ -8,24 +8,14 @@ using dotnet_sockets;
 
 namespace dotnet_nats
 {
-    class Server    
+    public class Server : IServer
     {
-        public Server(string url, ILog log)
-        {
-            URL = url;
-            if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
-            {
-                UriBuilder uri = new UriBuilder(url);
-                Address = uri.Host;
-                Port = uri.Port;
-                Transport = new AsyncSocketClient(uri.Host, uri.Port, log);
-            }
-        }
-
-        public string URL { get; private set; }
-        public string Address { get; private set; }
-        public int Port { get; private set; }
-        public ISocketClient Transport { get; private set; }
-
+        public Server() { ReconnectAttempts = 0; }
+        public string URL { get; set; }
+        public string Address { get; set; }
+        public int Port { get; set; }
+        public bool Connected { get { return this.Transport.IsConnected; } }
+        public int ReconnectAttempts { get; set; }
+        public ITransport Transport { get; set; }
     }
 }
