@@ -52,33 +52,12 @@ namespace dotnet_nats
         public bool Connect()
         {
             if (_server == null)
-                _server = NextServer();
+                _server = nextServer();
             if (_server == null)
             {
                 _log.Warn("Failed to retrieve a server from the queue");
                 return false;
             }
-            _server.Transport.Connected += (sender, b) =>
-            {
-                _log.Debug("Connected to server @ {0}", _server.URL);
-                sendConnect();
-            };
-            _server.Transport.Disconnected += (sender, b) =>
-            {
-
-            };
-            _server.Transport.Error += (sender, err) =>
-            {
-                _log.Error("Error with server @ {0}", _server.URL, err);
-            };
-            _server.Transport.ReceivedData += (sender, args) =>
-            {
-
-            };
-            _server.Transport.Sent += (sender, sent) =>
-            {
-
-            };
             _log.Info("Connecting to Server @ {0}", _server.URL);
             _server.Transport.Open();            
 
@@ -173,13 +152,40 @@ namespace dotnet_nats
         void loadServers()
         {            
             _servers = _factory.New(getOption<string[]>("uris"));
-            _itr = _servers.GetEnumerator();
-            _server = NextServer();
+            _servers.ToList().ForEach(connectServer);            
+            _itr = _servers.GetEnumerator();            
+            _server = nextServer();
+        }
+
+        void connectServer(IServer s)
+        {
+            s.Transport.Connected += (sender, b) =>
+            {
+                _log.Debug("Connected to server @ {0}", s.URL);
+                sendConnect();
+            };
+            s.Transport.Disconnected += (sender, b) =>
+            {
+                _log.Warn("Disconnected from server @ {0}. Reconnecting...", s.URL);                
+                new Action(() => { Connect(); }).ExecuteAfter(getOption<int>("reconnectDelay"));
+            };
+            s.Transport.Error += (sender, err) =>
+            {
+                _log.Error("Error with server @ {0}", s.URL, err);
+            };
+            s.Transport.ReceivedData += (sender, args) =>
+            {
+
+            };
+            s.Transport.Sent += (sender, sent) =>
+            {
+                _log.Trace("Sent {0} bytes to server @ {1}", sent, s.URL);
+            };
         }
 
         // need to expand this for clustering: basically, use a server until its maximum re-connect attempts is reached, then move to the next
         // eventually swing around to the first...
-        IServer NextServer()
+        IServer nextServer()
         {
             if (!_itr.MoveNext())
             {

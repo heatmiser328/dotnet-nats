@@ -96,7 +96,7 @@ namespace tests
             _transport.DidNotReceive().Send(Arg.Any<string>());            
         }
 
-        //[Fact]
+        [Fact]
         public void Reconnect()
         {
             _transport
@@ -112,8 +112,8 @@ namespace tests
             _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false));
 
             nats.Connected.ShouldBe(true);
-            _transport.Received(2).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received(2).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received(2).Open();            
             _transport.Received(2).Send(Arg.Is<string>(cConnect));            
             _log.Received(1).Warn("Disconnected from server @ {0}. Reconnecting...", cURL);
