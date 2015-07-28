@@ -20,6 +20,7 @@ namespace dotnet_nats
         IDictionary<string, Subscription> _subscriptions;
         IServer _server;
         bool _closing;
+        Action<bool> _connecthandler;
 
         public NATS(IServerFactory factory, Options opts, ILog log)
         {
@@ -49,10 +50,11 @@ namespace dotnet_nats
         public int Servers { get { return _servers != null ? _servers.Count : 0; } }
         public bool Connected { get { return _server != null && _server.Connected; } }
 
-        public bool Connect()
+        public bool Connect(Action<bool> handler = null)
         {
             try
             {
+                _connecthandler = handler;
                 if (_server == null)
                     _server = nextServer();
                 if (_server == null)
@@ -154,11 +156,15 @@ namespace dotnet_nats
             {
                 _log.Debug("Connected to server @ {0}", s.URL);
                 sendConnect();
+                if (_connecthandler != null) _connecthandler(true);
             };
             s.Transport.Disconnected += (sender, b) =>
             {
-                if (_closing) return;
-                _log.Warn("Disconnected from server @ {0}. Reconnecting...", s.URL);                
+                _log.Warn("Disconnected from server @ {0}", s.URL);
+                if (_connecthandler != null) _connecthandler(false);
+                if (_closing) return;                
+
+                _log.Debug("Reconnecting to server @ {0}", s.URL);                
                 new Action(() => { Connect(); }).ExecuteAfter(_opts.reconnectDelay);
             };
             s.Transport.Error += (sender, err) =>

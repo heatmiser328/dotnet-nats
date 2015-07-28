@@ -11,7 +11,7 @@ namespace dotnet_nats
         int Servers { get; }
         bool Connected { get; }
 
-        bool Connect();        
+        bool Connect(Action<bool> handler = null);
         void Close();
         void Subscribe(string topic, Action<string> handler);
         void Unsubscribe(string topic);

@@ -58,6 +58,28 @@ namespace tests
         }
 
         [Fact]
+        public void Connect_Handler()
+        {
+            var connected = false;
+            _transport
+                .WhenForAnyArgs(x => x.Open())
+                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+
+            _server.Connected.Returns(false, true);
+            INATS nats = new NATS(_factory, _opts, _log);
+            nats.ShouldNotBe(null);
+            nats.Servers.ShouldBe(1);
+            nats.Connected.ShouldBe(false);
+            nats.Connect((b) => connected = b).ShouldBe(true);
+            connected.ShouldBe(true);
+            nats.Connected.ShouldBe(true);
+            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _transport.Received().Open();
+            _transport.Received().Send(Arg.Is<string>(cConnect));
+        }
+
+
+        [Fact]
         public void Connect_NoServer()
         {
             _server.Connected.Returns(false);
@@ -91,8 +113,8 @@ namespace tests
             nats.Connected.ShouldBe(false);
             _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();
-            _transport.Received().Open();            
-            _log.Received().Error("Error with server @ {0}", cURL, Arg.Any<dotnet_sockets.EventArgs<Exception>>());
+            _transport.Received().Open();
+            _log.Received().Error("Error with server @ {0}", cURL, Arg.Any<Exception>());
             _transport.DidNotReceive().Send(Arg.Any<string>());            
         }
 
@@ -116,7 +138,8 @@ namespace tests
             _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received(2).Open();            
             _transport.Received(2).Send(Arg.Is<string>(cConnect));            
-            _log.Received(1).Warn("Disconnected from server @ {0}. Reconnecting...", cURL);
+            _log.Received(1).Warn("Disconnected from server @ {0}", cURL);
+            _log.Received(1).Debug("Reconnecting to server @ {0}", cURL);
         }
 
 

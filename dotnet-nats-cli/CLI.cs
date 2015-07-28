@@ -37,11 +37,9 @@ namespace dotnet_nats_cli
                 ILog log = new dotnet_nats.log.ConsoleLog();
                 ITransportFactory tf = new TransportFactory(log);
                 IServerFactory sf = new ServerFactory(tf, log);
-                nats = new NATS(sf, opts, log);                
-                if (nats.Connect())
-                {
-                    while (!nats.Connected) System.Threading.Thread.Sleep(100);
-
+                nats = new NATS(sf, opts, log);
+                nats.Connect((b) => {
+                    Console.Out.WriteLine("Perform {0}", opts.mode);
                     if (opts.mode.Equals("pub", StringComparison.InvariantCultureIgnoreCase))
                     {
                         publish(nats, opts.subject, opts.data, opts.count, log);
@@ -52,9 +50,9 @@ namespace dotnet_nats_cli
                     }
                     else
                     {
-                        Console.Out.WriteLine("Unknow mode supplied: {0}", opts.mode);
+                        Console.Out.WriteLine("Unknown mode supplied: {0}", opts.mode);
                     }
-                }
+                });                
             }
             catch
             {

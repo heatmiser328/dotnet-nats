@@ -1,3 +1,0 @@
-[submodule "dotnet-sockets"]
-	path = dotnet-sockets
-	url = git@github.com:heatmiser328/dotnet-sockets.git
