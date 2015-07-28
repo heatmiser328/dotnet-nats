@@ -11,6 +11,6 @@ namespace dotnet_nats
         public bool verbose { get; set; }
         public bool pedantic { get; set; }
         public int reconnectDelay { get; set; }
-        public string[] uris { get; set; }
+        public List<string> uris { get; set; }
     }
 }

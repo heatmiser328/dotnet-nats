@@ -37,7 +37,7 @@ namespace tests
         public void Instantiate_SingleServer()
         {
             Options opts = new Options();
-            opts.uris = new string[] { cURL };
+            opts.uris = new List<string>() { cURL };
 
             INATS nats = new NATS(_factory, opts, _log);            
             nats.ShouldNotBe(null);
@@ -49,7 +49,7 @@ namespace tests
         public void Instantiate_MultipleServer()
         {
             Options opts = new Options();
-            opts.uris = new string[] { cURL, cURL, cURL };
+            opts.uris = new List<string>() { cURL, cURL, cURL };
             _servers.Add(_server);
             _servers.Add(_server);
 

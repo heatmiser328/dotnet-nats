@@ -142,7 +142,7 @@ namespace dotnet_nats
         #region servers
         void loadServers()
         {            
-            _servers = _factory.New(_opts.uris);
+            _servers = _factory.New(_opts.uris.ToArray());
             _servers.ToList().ForEach(connectServer);            
             _itr = _servers.GetEnumerator();            
             _server = nextServer();
@@ -163,7 +163,7 @@ namespace dotnet_nats
             };
             s.Transport.Error += (sender, err) =>
             {
-                _log.Error("Error with server @ {0}", s.URL, err);
+                _log.Error("Error with server @ {0}", s.URL, err.Value);
             };
             s.Transport.ReceivedData += (sender, args) =>
             {
@@ -171,7 +171,7 @@ namespace dotnet_nats
             };
             s.Transport.Sent += (sender, sent) =>
             {
-                _log.Trace("Sent {0} bytes to server @ {1}", sent, s.URL);
+                _log.Trace("Sent {0} bytes to server @ {1}", sent.Value, s.URL);
             };
         }
 

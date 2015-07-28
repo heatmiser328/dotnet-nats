@@ -26,7 +26,7 @@ namespace tests
         public ConnectivityTests()
         {
             _opts = new Options();            
-            _opts.uris = new string[] {cURL};
+            _opts.uris = new List<string>() {cURL};
             _servers = new List<IServer>();
             _log = Substitute.For<ILog>();
             _transport = Substitute.For<ITransport>();
@@ -61,7 +61,7 @@ namespace tests
         public void Connect_NoServer()
         {
             _server.Connected.Returns(false);
-            _opts.uris = new string[] { };
+            _opts.uris = new List<string>() { };
             _servers.Clear();
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);

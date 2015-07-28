@@ -37,9 +37,11 @@ namespace dotnet_nats_cli
                 ILog log = new dotnet_nats.log.ConsoleLog();
                 ITransportFactory tf = new TransportFactory(log);
                 IServerFactory sf = new ServerFactory(tf, log);
-                nats = new NATS(sf, opts, log);
+                nats = new NATS(sf, opts, log);                
                 if (nats.Connect())
                 {
+                    while (!nats.Connected) System.Threading.Thread.Sleep(100);
+
                     if (opts.mode.Equals("pub", StringComparison.InvariantCultureIgnoreCase))
                     {
                         publish(nats, opts.subject, opts.data, opts.count, log);
@@ -76,7 +78,8 @@ namespace dotnet_nats_cli
             {
                 string msg = string.Format(data, i);
                 log.Debug("NATS Client: Sending {0}", i);
-                nats.Publish(subject,msg);
+                //nats.Publish(subject,msg);
+                System.Threading.Thread.Sleep(100);//System.Threading.Timeout.Infinite);
             }
         }
 
@@ -116,14 +119,15 @@ namespace dotnet_nats_cli
             p.Setup(arg => arg.mode)
                 .As('m', "mode")
                 .WithDescription("Mode (PUB|SUB)")
-                .SetDefault("PUB");
+                .Required();                
             p.Setup(arg => arg.subject)
                 .As('s', "subject")
                 .WithDescription("Subject")
                 .Required();
             p.Setup(arg => arg.data)
                 .As('d', "data")
-                .WithDescription("Data or path to file containing data to publish");
+                .WithDescription("Data or path to file containing data to publish")
+                .Required();
             p.Setup(arg => arg.count)
                 .As('c', "count")
                 .WithDescription("Number of items to publish/receive")
