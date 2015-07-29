@@ -12,34 +12,32 @@ using dotnet_nats;
 
 namespace tests
 {
-    public class ServerFactoryTest
+    public class FactoryTest
     {        
-        ILog _log;
-        ITransportFactory _factory;
+        ILog _log;        
         ITransport _transport;
         const string cURL = "nats://domain:4222";
 
-        public ServerFactoryTest()
+        public FactoryTest()
         {
             _log = Substitute.For<ILog>();            
             _transport = Substitute.For<ITransport>();
-            _factory = Substitute.For<ITransportFactory>();
-            _factory.New(Arg.Any<string>(), Arg.Any<int>()).Returns(_transport);
         }
 
         [Fact]
         public void Instantiate()
         {
-            IServerFactory factory = new ServerFactory(_factory, _log);
+            IFactory factory = new Factory(_log);
             factory.ShouldNotBe(null);
         }
 
         [Fact]
         public void New_Single()
         {
-            IServerFactory factory = new ServerFactory(_factory, _log);
-            factory.ShouldNotBe(null);
-            IServer server = factory.New(cURL);
+            IFactory factory = Substitute.ForPartsOf<Factory>(_log);
+            factory.NewTransport(Arg.Any<string>(), Arg.Any<int>()).Returns(_transport);
+
+            IServer server = factory.NewServer(cURL);
             server.ShouldNotBe(null);
             server.Connected.ShouldBe(false);
             server.URL.ShouldBe(cURL);
@@ -53,9 +51,11 @@ namespace tests
             const string cURL2 = "nats://domain2:8888";
             const string cURL3 = "nats://domain3:1234";
 
-            IServerFactory factory = new ServerFactory(_factory, _log);
-            factory.ShouldNotBe(null);
-            ICollection<IServer> servers = factory.New(new string[] {cURL,cURL2,cURL3});
+            IFactory factory = Substitute.ForPartsOf<Factory>(_log);
+            factory.NewTransport(Arg.Any<string>(), Arg.Any<int>()).Returns(_transport);
+
+
+            ICollection<IServer> servers = factory.NewServer(new string[] {cURL,cURL2,cURL3});
             servers.ShouldNotBe(null);
             servers.Count.ShouldBe(3);
             IEnumerator<IServer> current = servers.GetEnumerator();

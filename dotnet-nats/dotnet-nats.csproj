@@ -39,21 +39,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="factories\ServerFactory.cs" />
-    <Compile Include="factories\TransportFactory.cs" />
+    <Compile Include="factories\Factory.cs" />
+    <Compile Include="interfaces\IFactory.cs" />
     <Compile Include="interfaces\ILog.cs" />
+    <Compile Include="interfaces\IMessenger.cs" />
     <Compile Include="interfaces\INATS.cs" />
     <Compile Include="interfaces\IServer.cs" />
-    <Compile Include="interfaces\IServerFactory.cs" />
     <Compile Include="interfaces\ITransport.cs" />
-    <Compile Include="interfaces\ITransportFactory.cs" />
     <Compile Include="log\ConsoleLog.cs">
       <SubType>
       </SubType>
     </Compile>
     <Compile Include="models\Extensions.cs" />
+    <Compile Include="models\Message.cs" />
+    <Compile Include="models\Messenger.cs" />
     <Compile Include="models\Options.cs" />
-    <Compile Include="models\Payload.cs" />
     <Compile Include="models\Server.cs" />
     <Compile Include="models\TcpTransport.cs" />
     <Compile Include="NATS.cs" />

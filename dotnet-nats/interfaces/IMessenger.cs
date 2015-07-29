@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats
 {
-    public interface ITransportFactory
-    {        
-        ITransport New(string address, int port);
+    public interface IMessenger
+    {
+        void Ping(Action<string> handler);
+        void Receive(byte[] data, int size);
     }
 }

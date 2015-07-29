@@ -13,10 +13,9 @@ namespace dotnet_nats
 
         Task<bool> Connect(Action<bool> handler = null);
         void Close();
-        void Subscribe(string topic, Action<string> handler);
-        void Unsubscribe(string topic);
-        void Publish(string topic, string data);
-        void Publish(string topic, byte[] data);
+        void Publish(string subject, string data, Action<string> handler = null);        
+        void Subscribe(string subject, Action<string> handler);
+        void Unsubscribe(string subject);
         void Flush();
     }
 }

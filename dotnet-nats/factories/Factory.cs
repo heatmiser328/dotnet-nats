@@ -6,33 +6,32 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats
 {
-    public class ServerFactory : IServerFactory
+    public class Factory : IFactory
     {
-        ITransportFactory _factory;
         ILog _log;
 
-        public ServerFactory(ITransportFactory factory, ILog log)
-        {
-            _factory = factory;
+        public Factory(ILog log)
+        {            
             _log = log;
         }
 
-        public IServer New(string url)
+        public IServer NewServer(string url)
         {
             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
             {
                 UriBuilder uri = new UriBuilder(url);
-                return new Server {
+                return new Server
+                {
                     URL = url,
                     Address = uri.Host,
                     Port = uri.Port,
-                    Transport = _factory.New(uri.Host, uri.Port)                    
+                    Transport = NewTransport(uri.Host, uri.Port)
                 };
             }
-            return null;
+            return null;            
         }
 
-        public ICollection<IServer> New(string[] urls)
+        public ICollection<IServer> NewServer(string[] urls)
         {
             ICollection<IServer> servers = new List<IServer>();
             foreach (string url in urls)
@@ -42,9 +41,24 @@ namespace dotnet_nats
                     _log.Warn("Unrecognized server url: {0}. Skipping...", url);
                     continue;
                 }
-                servers.Add(New(url));
+                servers.Add(NewServer(url));
             }
-            return servers;
+            return servers;            
+        }
+
+        public virtual ITransport NewTransport(string address, int port)
+        {
+            ITransport t = new TcpTransport(address, port);
+            t.Log += (sender, args) =>
+            {
+                _log.Log(args.Level, args.Message, args.Exception, args.Args);
+            };
+            return t;
+        }
+
+        public IMessenger NewMessenger()
+        {
+            return new Messenger(_log);
         }
     }
 }

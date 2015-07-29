@@ -12,31 +12,33 @@ namespace dotnet_nats
     public class NATS : INATS, IDisposable
     {
         #region Constructors
-        IServerFactory _factory;
+        IFactory _factory;
+        Options _opts;
         ILog _log;
         ICollection<IServer> _servers;
         IEnumerator<IServer> _itr;
-        Options _opts;
-        IDictionary<string, Subscription> _subscriptions;
         IServer _server;
+        IMessenger _msgr;
+        IDictionary<string, Subscription> _subscriptions;                
         bool _closing;
         Action<bool> _connecthandler;
 
-        public NATS(IServerFactory factory, Options opts, ILog log)
+        public NATS(IFactory factory, Options opts, ILog log)
         {
-            _factory = factory;            
+            _factory = factory;
+            _opts = opts;
             _log = log;
             _subscriptions = new Dictionary<string, Subscription>();
-            _opts = opts;            
+            _msgr = _factory.NewMessenger();
             loadServers();
         }
-        public NATS(IServerFactory factory, Options opts) : this(factory, opts, new log.ConsoleLog()) { }                
+        public NATS(IFactory factory, Options opts) : this(factory, opts, new log.ConsoleLog()) { }                
         #endregion
 
         #region Connect
         public static INATS Connect(Options opts, ILog log)
         {            
-            INATS nats = new NATS(new ServerFactory(new TransportFactory(log), log), opts, log);
+            INATS nats = new NATS(new Factory(log), opts, log);
             nats.Connect();
             return nats;
         }
@@ -96,27 +98,34 @@ namespace dotnet_nats
             }
         }
 
+        public void Publish(string subject, string data, Action<string> handler = null)
+        {
+            try
+            {
+                sendPublication(subject, data);                
+                if (handler != null)
+                    sendPing(handler);
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Failed to publish {0} to server", ex, subject);
+                throw;
+            }            
+        }
+
         public void Subscribe(string subject, Action<string> handler)
         {
-            _subscriptions[subject] = new Subscription(subject, handler);
+            throw new NotImplementedException();
+            //_subscriptions[subject] = new Subscription(subject, handler);
             // send to server
         }
 
         public void Unsubscribe(string subject)
         {
-            if (_subscriptions.ContainsKey(subject))
-                _subscriptions.Remove(subject);
+            throw new NotImplementedException();
+            //if (_subscriptions.ContainsKey(subject))
+            //    _subscriptions.Remove(subject);
             // send to server
-        }
-
-        public void Publish(string topic, string data)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Publish(string topic, byte[] data)
-        {
-            throw new NotImplementedException();
         }
 
         public void Flush()
@@ -128,21 +137,26 @@ namespace dotnet_nats
         #region send
         void sendConnect()
         {
-            StringBuilder cmd = new StringBuilder();
-            cmd.Append("CONNECT {");
-            cmd.AppendFormat(@"""verbose"":{0}", _opts.verbose.ToString().ToLower());
-            cmd.AppendFormat(@",""pedantic"":{0}", _opts.pedantic.ToString().ToLower());
-            cmd.Append("}");
-            //cmd.Append(System.Environment.NewLine);
-            cmd.Append("\r\n");
-            _server.Transport.Send(cmd.ToString());
+            _server.Transport.Send(Message.Connect(_opts));
         }
+
+        void sendPublication(string subject, string data)
+        {
+            _server.Transport.Send(Message.Publish(subject, data));
+        }
+
+        void sendPing(Action<string> handler)
+        {
+            _msgr.Ping(handler);
+            _server.Transport.Send(Message.Ping());
+        }
+            
         #endregion
 
         #region servers
         void loadServers()
         {            
-            _servers = _factory.New(_opts.uris.ToArray());
+            _servers = _factory.NewServer(_opts.uris.ToArray());
             _servers.ToList().ForEach(connectServer);            
             _itr = _servers.GetEnumerator();            
             _server = nextServer();
@@ -171,7 +185,7 @@ namespace dotnet_nats
             };
             s.Transport.ReceivedData += (sender, args) =>
             {
-
+                _msgr.Receive(args.Data, args.Size);
             };
             s.Transport.Sent += (sender, sent) =>
             {

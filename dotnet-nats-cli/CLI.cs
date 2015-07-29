@@ -34,10 +34,9 @@ namespace dotnet_nats_cli
             INATS nats = null;
             try
             {
-                ILog log = new dotnet_nats.log.ConsoleLog();
-                ITransportFactory tf = new TransportFactory(log);
-                IServerFactory sf = new ServerFactory(tf, log);
-                nats = new NATS(sf, opts, log);
+                ILog log = new dotnet_nats.log.ConsoleLog();                
+                IFactory f = new Factory(log);
+                nats = new NATS(f, opts, log);
                 var t = nats.Connect();
                 t.Wait();
                 if (t.Result) 
@@ -82,8 +81,8 @@ namespace dotnet_nats_cli
             {
                 string msg = string.Format(data, i);
                 log.Debug("NATS Client: Sending {0}", i);
-                //nats.Publish(subject,msg);
-                System.Threading.Thread.Sleep(100);//System.Threading.Timeout.Infinite);
+                nats.Publish(subject,msg);
+                //System.Threading.Thread.Sleep(100);//System.Threading.Timeout.Infinite);
             }
         }
 

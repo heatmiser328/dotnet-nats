@@ -15,7 +15,7 @@ namespace tests
     public class InstantiateTests
     {
         ILog _log;
-        IServerFactory _factory;
+        IFactory _factory;
         IServer _server;
         ITransport _transport;
         ICollection<IServer> _servers;
@@ -29,8 +29,8 @@ namespace tests
             _server = Substitute.For<IServer>();
             _server.Transport.Returns(_transport);
             _servers.Add(_server);
-            _factory = Substitute.For<IServerFactory>();            
-            _factory.New(Arg.Any<string[]>()).Returns(_servers);
+            _factory = Substitute.For<IFactory>();            
+            _factory.NewServer(Arg.Any<string[]>()).Returns(_servers);
         }
 
         [Fact]
