@@ -10,6 +10,8 @@ using NSubstitute;
 
 using dotnet_nats;
 
+#pragma warning disable 4014
+
 namespace tests
 {
     public class ConnectivityTests
@@ -30,6 +32,7 @@ namespace tests
             _servers = new List<IServer>();
             _log = Substitute.For<ILog>();
             _transport = Substitute.For<ITransport>();
+            _transport.Open().Returns(Task<bool>.FromResult(true));
             _server = Substitute.For<IServer>();
             _server.URL.Returns(cURL);
             _server.Transport.Returns(_transport);
@@ -39,7 +42,7 @@ namespace tests
         }
 
         [Fact]
-        public void Connect()
+        public async Task Connect()
         {
             _transport
                 .WhenForAnyArgs(x => x.Open())
@@ -50,7 +53,8 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
-            nats.Connect().ShouldBe(true);            
+            var b = await nats.Connect();
+            b.ShouldBe(true);            
             nats.Connected.ShouldBe(true);
             _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received().Open();            
@@ -58,7 +62,7 @@ namespace tests
         }
 
         [Fact]
-        public void Connect_Handler()
+        public async Task Connect_Handler()
         {
             var connected = false;
             _transport
@@ -70,7 +74,9 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
-            nats.Connect((b) => connected = b).ShouldBe(true);
+            var c = await nats.Connect((b) => connected = b);
+            c.ShouldBe(true);
+            connected.ShouldBe(true);
             connected.ShouldBe(true);
             nats.Connected.ShouldBe(true);
             _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
@@ -80,7 +86,7 @@ namespace tests
 
 
         [Fact]
-        public void Connect_NoServer()
+        public async Task Connect_NoServer()
         {
             _server.Connected.Returns(false);
             _opts.uris = new List<string>() { };
@@ -89,7 +95,8 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(0);
             nats.Connected.ShouldBe(false);
-            nats.Connect().ShouldBe(false);
+            var c = await nats.Connect();
+            c.ShouldBe(false);
             nats.Connected.ShouldBe(false);
             _transport.DidNotReceive().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();            
             _transport.DidNotReceive().Open();            
@@ -97,7 +104,7 @@ namespace tests
         }
 
         [Fact]
-        public void Connect_Fail()
+        public async Task Connect_Fail()
         {            
             _server.Connected.Returns(false);
             _transport
@@ -109,7 +116,8 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
-            nats.Connect().ShouldBe(true);
+            var c = await nats.Connect();
+            c.ShouldBe(true);
             nats.Connected.ShouldBe(false);
             _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();
@@ -119,7 +127,7 @@ namespace tests
         }
 
         [Fact]
-        public void Reconnect()
+        public async Task Reconnect()
         {
             _transport
                 .WhenForAnyArgs(x => x.Open())
@@ -130,7 +138,8 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
-            nats.Connect().ShouldBe(true);
+            var c = await nats.Connect();
+            c.ShouldBe(true);
             _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false));
 
             nats.Connected.ShouldBe(true);
@@ -144,7 +153,7 @@ namespace tests
 
 
         [Fact]
-        public void Close()
+        public async Task Close()
         {
             _transport
                 .WhenForAnyArgs(x => x.Open())
@@ -158,7 +167,8 @@ namespace tests
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
-            nats.Connect().ShouldBe(true);            
+            var c = await nats.Connect();
+            c.ShouldBe(true);            
             nats.Connected.ShouldBe(true);
             _transport.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
             _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();

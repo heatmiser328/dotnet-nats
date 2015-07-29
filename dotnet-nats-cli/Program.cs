@@ -22,6 +22,9 @@ namespace dotnet_nats_cli
                     ex = ex.InnerException;
                 }                    
             }            
+            finally
+            {                
+            }
         }
     }
 }

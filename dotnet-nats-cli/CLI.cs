@@ -38,8 +38,10 @@ namespace dotnet_nats_cli
                 ITransportFactory tf = new TransportFactory(log);
                 IServerFactory sf = new ServerFactory(tf, log);
                 nats = new NATS(sf, opts, log);
-                nats.Connect((b) => {
-                    Console.Out.WriteLine("Perform {0}", opts.mode);
+                var t = nats.Connect();
+                t.Wait();
+                if (t.Result) 
+                {                    
                     if (opts.mode.Equals("pub", StringComparison.InvariantCultureIgnoreCase))
                     {
                         publish(nats, opts.subject, opts.data, opts.count, log);
@@ -52,7 +54,11 @@ namespace dotnet_nats_cli
                     {
                         Console.Out.WriteLine("Unknown mode supplied: {0}", opts.mode);
                     }
-                });                
+                }
+                else
+                {
+                    throw new Exception("Failed to connect to server");
+                }
             }
             catch
             {
@@ -86,7 +92,9 @@ namespace dotnet_nats_cli
             nats.Subscribe(subject, (data) =>
             {
                 log.Debug("Received: {0}", data);
+                count--;
             });
+            while (count > 0) { System.Threading.Thread.Sleep(250); }
         }
 
         CLIOptions parse(string[] args)

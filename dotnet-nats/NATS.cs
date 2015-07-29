@@ -50,7 +50,7 @@ namespace dotnet_nats
         public int Servers { get { return _servers != null ? _servers.Count : 0; } }
         public bool Connected { get { return _server != null && _server.Connected; } }
 
-        public bool Connect(Action<bool> handler = null)
+        public Task<bool> Connect(Action<bool> handler = null)
         {
             try
             {
@@ -60,12 +60,10 @@ namespace dotnet_nats
                 if (_server == null)
                 {
                     _log.Warn("Failed to retrieve a server from the queue");
-                    return false;
+                    return Task<bool>.FromResult(false);
                 }
                 _log.Info("Connecting to Server @ {0}", _server.URL);
-                _server.Transport.Open();
-
-                return true;
+                return _server.Transport.Open();
             }
             catch (Exception ex)
             {
