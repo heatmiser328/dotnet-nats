@@ -52,7 +52,7 @@ namespace dotnet_nats
 
         #region INATS
         public int Servers { get { return _servers != null ? _servers.Count : 0; } }
-        public bool Connected { get { return _server != null && _server.Connected; } }
+        public bool Connected { get { return _server != null && _server.IsConnected; } }
 
         public Task<bool> Connect(Action<bool> handler = null)
         {
@@ -67,7 +67,7 @@ namespace dotnet_nats
                     return Task<bool>.FromResult(false);
                 }
                 _log.Info("Connecting to Server @ {0}", _server.URL);
-                return _server.Transport.Open();
+                return _server.Open();
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace dotnet_nats
                 {
                     _log.Info("Disconnecting from Server @ {0}", _server.URL);
                     _closing = true;                    
-                    _server.Transport.Close();
+                    _server.Close();
                 }            
             }
             catch (Exception ex)
@@ -117,16 +117,21 @@ namespace dotnet_nats
 
         public void Subscribe(string subject, Action<string> handler)
         {            
-            _subscriptions[subject] = new Subscription(subject, handler);
-            sendSubscription(_subscriptions[subject].SID, subject);
+            if (!_subscriptions.ContainsKey(subject))
+            {
+                _subscriptions[subject] = new Subscription(subject, handler);
+                sendSubscription(_subscriptions[subject].ID, subject);
+            }
         }
 
         public void Unsubscribe(string subject)
-        {
-            throw new NotImplementedException();
-            //if (_subscriptions.ContainsKey(subject))
-            //    _subscriptions.Remove(subject);
-            // send to server
+        {            
+            if (_subscriptions.ContainsKey(subject))
+            {
+                sendUnsubscription(_subscriptions[subject].ID);
+                _subscriptions.Remove(subject);
+            }
+                            
         }
 
         public void Flush()
@@ -138,23 +143,37 @@ namespace dotnet_nats
         #region send
         void sendConnect()
         {
-            _server.Transport.Send(Message.Connect(_opts));
+            _server.Send(Message.Connect(_opts));
         }
 
         void sendPublication(string subject, string data)
         {
-            _server.Transport.Send(Message.Publish(subject, data));
+            _server.Send(Message.Publish(subject, data));
         }
 
-        void sendSubscription(int sid, string subject)
+        void sendSubscription(int id, string subject, string queue = " ")
         {
-            _server.Transport.Send(Message.Subscribe(sid, subject));
+            _server.Send(Message.Subscribe(id, subject, queue));
+        }
+
+        void sendSubscriptions()
+        {
+            foreach(var sub in _subscriptions)
+            {
+                sendSubscription(sub.Value.ID, sub.Value.Subject, sub.Value.Queue);
+            }
+            
+        }
+
+        void sendUnsubscription(int sid)
+        {
+            _server.Send(Message.Unsubscribe(sid));
         }
 
         void sendPing(Action<string> handler)
         {
             _msgr.Ping(handler);
-            _server.Transport.Send(Message.Ping());
+            _server.Send(Message.Ping());
         }
             
         #endregion
@@ -164,9 +183,9 @@ namespace dotnet_nats
         {
             return Task.Factory.StartNew(() =>
             {                                
-                while (!_closing && _server.Connected)
+                while (!_closing && _server.IsConnected)
                 {
-                    _server.Transport.Receive().Wait(_cancel.Token);
+                    _server.Receive().Wait(_cancel.Token);
                 }
             });
         }
@@ -183,14 +202,14 @@ namespace dotnet_nats
 
         void connectServer(IServer s)
         {
-            s.Transport.Connected += (sender, b) =>
+            s.Connected += (sender, b) =>
             {
                 _log.Debug("Connected to server @ {0}", s.URL);
                 sendConnect();                
                 if (_connecthandler != null) _connecthandler(true);
                 receive();
             };
-            s.Transport.Disconnected += (sender, b) =>
+            s.Disconnected += (sender, b) =>
             {
                 _log.Warn("Disconnected from server @ {0}", s.URL);
                 _cancel.Cancel();
@@ -200,15 +219,15 @@ namespace dotnet_nats
                 _log.Debug("Reconnecting to server @ {0}", s.URL);                
                 new Action(() => { Connect(); }).ExecuteAfter(_opts.reconnectDelay);
             };
-            s.Transport.Error += (sender, err) =>
+            s.Error += (sender, err) =>
             {
                 _log.Error("Error with server @ {0}", s.URL, err.Value);
             };
-            s.Transport.ReceivedData += (sender, args) =>
+            s.ReceivedData += (sender, args) =>
             {
                 _msgr.Receive(args.Data, args.Size);
             };
-            s.Transport.Sent += (sender, sent) =>
+            s.Sent += (sender, sent) =>
             {
                 _log.Trace("Sent {0} bytes to server @ {1}", sent.Value, s.URL);
             };

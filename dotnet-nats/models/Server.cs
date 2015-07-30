@@ -25,7 +25,7 @@ namespace dotnet_nats
         public string URL { get; set; }
         public string Address { get; set; }
         public int Port { get; set; }
-        public bool Connected { get { return _client != null && _client.IsConnected; } }
+        public bool IsConnected { get { return _client != null && _client.IsConnected; } }
         public int ReconnectAttempts { get; set; }
 
         public event EventHandler<EventArgs<bool>> Connected

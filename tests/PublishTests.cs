@@ -18,8 +18,7 @@ namespace tests
     {
         ILog _log;
         IFactory _factory;
-        IServer _server;
-        ITransport _transport;
+        IServer _server;        
         IMessenger _msgr;
         ICollection<IServer> _servers;
         Options _opts;
@@ -36,16 +35,13 @@ namespace tests
 
             _msgr = Substitute.For<IMessenger>();
 
-            _transport = Substitute.For<ITransport>();
-            _transport.Open().Returns(Task<bool>.FromResult(true));
-            _transport.Send(Arg.Any<string>())
-                .Returns(Task<int>.FromResult(1))
-                .AndDoes(x => { _transport.Sent += Raise.EventWith(new dotnet_sockets.EventArgs<int>(1));});
-                    
             _server = Substitute.For<IServer>();
-            _server.Connected.Returns(true);
+            _server.IsConnected.Returns(true);
             _server.URL.Returns(cURL);
-            _server.Transport.Returns(_transport);
+            _server.Open().Returns(Task<bool>.FromResult(true));
+            _server.Send(Arg.Any<string>())
+                .Returns(Task<int>.FromResult(1))
+                .AndDoes(x => { _server.Sent += Raise.EventWith(new dotnet_sockets.EventArgs<int>(1)); });            
             _servers.Add(_server);
             _factory = Substitute.For<IFactory>();
             _factory.NewServer(Arg.Any<string[]>()).Returns(_servers);
@@ -57,10 +53,10 @@ namespace tests
         {
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
-            _transport.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
+            _server.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
             await nats.Connect();
             nats.Publish("a", "data");
-            _transport.Received(1).Send(Arg.Is<string>(makePublication("a", "data")));
+            _server.Received(1).Send(Arg.Is<string>(makePublication("a", "data")));
             _log.Received().Trace("Sent {0} bytes to server @ {1}", 1, _server.URL);            
         }
 
@@ -69,14 +65,14 @@ namespace tests
         {
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
-            _transport.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
+            _server.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
             await nats.Connect();
             nats.Publish("a", "data1");
             nats.Publish("a", "data2");
             nats.Publish("b", "data");
-            _transport.Received(1).Send(Arg.Is<string>(makePublication("a", "data1")));
-            _transport.Received(1).Send(Arg.Is<string>(makePublication("a", "data2")));
-            _transport.Received(1).Send(Arg.Is<string>(makePublication("b", "data")));
+            _server.Received(1).Send(Arg.Is<string>(makePublication("a", "data1")));
+            _server.Received(1).Send(Arg.Is<string>(makePublication("a", "data2")));
+            _server.Received(1).Send(Arg.Is<string>(makePublication("b", "data")));
             _log.Received(3).Trace("Sent {0} bytes to server @ {1}", 1, _server.URL);            
         }
 
@@ -87,18 +83,18 @@ namespace tests
             byte[] pong = Encoding.UTF8.GetBytes(PONG);
             _msgr.When(x => x.Receive(Arg.Is<byte[]>(pong), Arg.Is<int>(pong.Length)))
                 .Do(x => { handler(""); });
-            _transport
+            _server
                 .When(x => x.Send(Arg.Is<string>("PING\r\n")))
-                .Do(x => { _transport.ReceivedData += Raise.EventWith(new dotnet_sockets.SocketDataArgs(null, pong, pong.Length)); });                
+                .Do(x => { _server.ReceivedData += Raise.EventWith(new dotnet_sockets.SocketDataArgs(null, pong, pong.Length)); });                
                                             
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
-            _transport.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
-            _transport.Received().ReceivedData += Arg.Any<EventHandler<dotnet_sockets.SocketDataArgs>>();
+            _server.Received().Sent += Arg.Any<EventHandler<dotnet_sockets.EventArgs<int>>>();
+            _server.Received().ReceivedData += Arg.Any<EventHandler<dotnet_sockets.SocketDataArgs>>();
             await nats.Connect();
             nats.Publish("a", "data", handler);
-            _transport.Received(1).Send(Arg.Is<string>(makePublication("a", "data")));
-            _transport.Received(1).Send(Arg.Is<string>("PING\r\n"));            
+            _server.Received(1).Send(Arg.Is<string>(makePublication("a", "data")));
+            _server.Received(1).Send(Arg.Is<string>("PING\r\n"));            
             _log.Received(2).Trace("Sent {0} bytes to server @ {1}", 1, _server.URL);
             handler.ReceivedCalls().Count().ShouldBe(1);
         }

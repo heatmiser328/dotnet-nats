@@ -13,7 +13,7 @@ namespace dotnet_nats
         string URL { get; }
         string Address { get; }
         int Port { get; }
-        bool Connected { get; }
+        bool IsConnected { get; }
         int ReconnectAttempts { get; set; }
 
         event EventHandler<EventArgs<bool>> Connected;        

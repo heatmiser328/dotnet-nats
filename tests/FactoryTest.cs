@@ -14,14 +14,12 @@ namespace tests
 {
     public class FactoryTest
     {        
-        ILog _log;        
-        ITransport _transport;
+        ILog _log;                
         const string cURL = "nats://domain:4222";
 
         public FactoryTest()
         {
-            _log = Substitute.For<ILog>();            
-            _transport = Substitute.For<ITransport>();
+            _log = Substitute.For<ILog>();                        
         }
 
         [Fact]
@@ -34,12 +32,11 @@ namespace tests
         [Fact]
         public void New_Single()
         {
-            IFactory factory = Substitute.ForPartsOf<Factory>(_log);
-            factory.NewTransport(Arg.Any<string>(), Arg.Any<int>()).Returns(_transport);
+            IFactory factory = Substitute.ForPartsOf<Factory>(_log);            
 
             IServer server = factory.NewServer(cURL);
             server.ShouldNotBe(null);
-            server.Connected.ShouldBe(false);
+            server.IsConnected.ShouldBe(false);
             server.URL.ShouldBe(cURL);
             server.Address.ShouldBe("domain");
             server.Port.ShouldBe(4222);
@@ -51,9 +48,7 @@ namespace tests
             const string cURL2 = "nats://domain2:8888";
             const string cURL3 = "nats://domain3:1234";
 
-            IFactory factory = Substitute.ForPartsOf<Factory>(_log);
-            factory.NewTransport(Arg.Any<string>(), Arg.Any<int>()).Returns(_transport);
-
+            IFactory factory = Substitute.ForPartsOf<Factory>(_log);            
 
             ICollection<IServer> servers = factory.NewServer(new string[] {cURL,cURL2,cURL3});
             servers.ShouldNotBe(null);
@@ -61,21 +56,21 @@ namespace tests
             IEnumerator<IServer> current = servers.GetEnumerator();
             current.MoveNext();            
             IServer server = current.Current;
-            server.Connected.ShouldBe(false);
+            server.IsConnected.ShouldBe(false);
             server.URL.ShouldBe(cURL);
             server.Address.ShouldBe("domain");
             server.Port.ShouldBe(4222);
 
             current.MoveNext();
-            server = current.Current;            
-            server.Connected.ShouldBe(false);
+            server = current.Current;
+            server.IsConnected.ShouldBe(false);
             server.URL.ShouldBe(cURL2);
             server.Address.ShouldBe("domain2");
             server.Port.ShouldBe(8888);
 
             current.MoveNext();
             server = current.Current;
-            server.Connected.ShouldBe(false);
+            server.IsConnected.ShouldBe(false);
             server.URL.ShouldBe(cURL3);
             server.Address.ShouldBe("domain3");
             server.Port.ShouldBe(1234);

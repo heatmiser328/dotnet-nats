@@ -18,8 +18,7 @@ namespace tests
     {
         ILog _log;
         IFactory _factory;
-        IServer _server;
-        ITransport _transport;
+        IServer _server;        
         ICollection<IServer> _servers;
         Options _opts;
         const string cURL = "nats://domain:4222";
@@ -31,11 +30,10 @@ namespace tests
             _opts.uris = new List<string>() {cURL};
             _servers = new List<IServer>();
             _log = Substitute.For<ILog>();
-            _transport = Substitute.For<ITransport>();
-            _transport.Open().Returns(Task<bool>.FromResult(true));
+                        
             _server = Substitute.For<IServer>();
             _server.URL.Returns(cURL);
-            _server.Transport.Returns(_transport);
+            _server.Open().Returns(Task<bool>.FromResult(true));
             _servers.Add(_server);
             _factory = Substitute.For<IFactory>();
             _factory.NewServer(Arg.Any<string[]>()).Returns(_servers);            
@@ -44,11 +42,11 @@ namespace tests
         [Fact]
         public async Task Connect()
         {
-            _transport
+            _server
                 .WhenForAnyArgs(x => x.Open())
-                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+                .Do(x => { _server.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
 
-            _server.Connected.Returns(false, true);
+            _server.IsConnected.Returns(false, true);
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
@@ -56,20 +54,20 @@ namespace tests
             var b = await nats.Connect();
             b.ShouldBe(true);            
             nats.Connected.ShouldBe(true);
-            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received().Open();            
-            _transport.Received().Send(Arg.Is<string>(cConnect));
+            _server.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received().Open();
+            _server.Received().Send(Arg.Is<string>(cConnect));
         }
 
         [Fact]
         public async Task Connect_Handler()
         {
             var connected = false;
-            _transport
+            _server
                 .WhenForAnyArgs(x => x.Open())
-                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+                .Do(x => { _server.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
 
-            _server.Connected.Returns(false, true);
+            _server.IsConnected.Returns(false, true);
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
@@ -79,16 +77,16 @@ namespace tests
             connected.ShouldBe(true);
             connected.ShouldBe(true);
             nats.Connected.ShouldBe(true);
-            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received().Open();
-            _transport.Received().Send(Arg.Is<string>(cConnect));
+            _server.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received().Open();
+            _server.Received().Send(Arg.Is<string>(cConnect));
         }
 
 
         [Fact]
         public async Task Connect_NoServer()
         {
-            _server.Connected.Returns(false);
+            _server.IsConnected.Returns(false);
             _opts.uris = new List<string>() { };
             _servers.Clear();
             INATS nats = new NATS(_factory, _opts, _log);
@@ -98,18 +96,18 @@ namespace tests
             var c = await nats.Connect();
             c.ShouldBe(false);
             nats.Connected.ShouldBe(false);
-            _transport.DidNotReceive().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();            
-            _transport.DidNotReceive().Open();            
-            _transport.DidNotReceive().Send(Arg.Any<string>());            
+            _server.DidNotReceive().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.DidNotReceive().Open();
+            _server.DidNotReceive().Send(Arg.Any<string>());            
         }
 
         [Fact]
         public async Task Connect_Fail()
         {            
-            _server.Connected.Returns(false);
-            _transport
+            _server.IsConnected.Returns(false);
+            _server
                 .WhenForAnyArgs(x => x.Open())
-                .Do(x => { _transport.Error += Raise.EventWith(new dotnet_sockets.EventArgs<Exception>(new System.Net.Sockets.SocketException(10061))); });
+                .Do(x => { _server.Error += Raise.EventWith(new dotnet_sockets.EventArgs<Exception>(new System.Net.Sockets.SocketException(10061))); });
             //_transport.WhenForAnyArgs(x => x.Open()).Do(x => { throw new System.Net.Sockets.SocketException(10061); });
                         
             INATS nats = new NATS(_factory, _opts, _log);
@@ -119,34 +117,34 @@ namespace tests
             var c = await nats.Connect();
             c.ShouldBe(true);
             nats.Connected.ShouldBe(false);
-            _transport.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();
-            _transport.Received().Open();
+            _server.Received().Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received().Error += Arg.Any<EventHandler<dotnet_sockets.EventArgs<Exception>>>();
+            _server.Received().Open();
             _log.Received().Error("Error with server @ {0}", cURL, Arg.Any<Exception>());
-            _transport.DidNotReceive().Send(Arg.Any<string>());            
+            _server.DidNotReceive().Send(Arg.Any<string>());            
         }
 
         [Fact]
         public async Task Reconnect()
         {
-            _transport
+            _server
                 .WhenForAnyArgs(x => x.Open())
-                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+                .Do(x => { _server.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
 
-            _server.Connected.Returns(false, true);
+            _server.IsConnected.Returns(false, true);
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
             nats.Connected.ShouldBe(false);
             var c = await nats.Connect();
             c.ShouldBe(true);
-            _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false));
+            _server.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false));
 
             nats.Connected.ShouldBe(true);
-            _transport.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received(2).Open();            
-            _transport.Received(2).Send(Arg.Is<string>(cConnect));            
+            _server.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received(2).Open();
+            _server.Received(2).Send(Arg.Is<string>(cConnect));            
             _log.Received(1).Warn("Disconnected from server @ {0}", cURL);
             _log.Received(1).Debug("Reconnecting to server @ {0}", cURL);
         }
@@ -155,14 +153,14 @@ namespace tests
         [Fact]
         public async Task Close()
         {
-            _transport
+            _server
                 .WhenForAnyArgs(x => x.Open())
-                .Do(x => { _transport.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
-            _transport
+                .Do(x => { _server.Connected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(true)); });
+            _server
                 .WhenForAnyArgs(x => x.Close())
-                .Do(x => { _transport.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false)); });
+                .Do(x => { _server.Disconnected += Raise.EventWith(new dotnet_sockets.EventArgs<bool>(false)); });
 
-            _server.Connected.Returns(false, true);
+            _server.IsConnected.Returns(false, true);
             INATS nats = new NATS(_factory, _opts, _log);
             nats.ShouldNotBe(null);
             nats.Servers.ShouldBe(1);
@@ -170,14 +168,14 @@ namespace tests
             var c = await nats.Connect();
             c.ShouldBe(true);            
             nats.Connected.ShouldBe(true);
-            _transport.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
-            _transport.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received(1).Connected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
+            _server.Received(1).Disconnected += Arg.Any<EventHandler<dotnet_sockets.EventArgs<bool>>>();
 
             nats.Close();
 
-            _transport.Received(1).Open();
-            _transport.Received(1).Send(Arg.Is<string>(cConnect));
-            _transport.Received(1).Close();            
+            _server.Received(1).Open();
+            _server.Received(1).Send(Arg.Is<string>(cConnect));
+            _server.Received(1).Close();            
         }
 
     }

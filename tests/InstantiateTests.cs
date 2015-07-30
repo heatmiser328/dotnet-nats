@@ -16,18 +16,15 @@ namespace tests
     {
         ILog _log;
         IFactory _factory;
-        IServer _server;
-        ITransport _transport;
+        IServer _server;        
         ICollection<IServer> _servers;
         const string cURL = "nats://domain:4222";
         
         public InstantiateTests()
         {
             _servers = new List<IServer>();
-            _log = Substitute.For<ILog>();
-            _transport = Substitute.For<ITransport>();
-            _server = Substitute.For<IServer>();
-            _server.Transport.Returns(_transport);
+            _log = Substitute.For<ILog>();            
+            _server = Substitute.For<IServer>();            
             _servers.Add(_server);
             _factory = Substitute.For<IFactory>();            
             _factory.NewServer(Arg.Any<string[]>()).Returns(_servers);

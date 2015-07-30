@@ -131,8 +131,8 @@ namespace dotnet_nats_cli
                 .Required();
             p.Setup(arg => arg.data)
                 .As('d', "data")
-                .WithDescription("Data or path to file containing data to publish")
-                .Required();
+                .WithDescription("Data or path to file containing data to publish");
+                //.Required();
             p.Setup(arg => arg.count)
                 .As('c', "count")
                 .WithDescription("Number of items to publish/receive")
@@ -141,10 +141,11 @@ namespace dotnet_nats_cli
             p.SetupHelp("?", "h", "help")
                 .Callback(text => Console.Out.WriteLine(text));
 
-            if (p.Parse(args).HasErrors)
+            var result = p.Parse(args);
+            if (result.HasErrors)
             {
                 p.HelpOption.ShowHelp(p.Options);
-                throw new Exception("Failed to parse command line arguments");
+                throw new Exception(result.ErrorText);
             }
                 
             return p.Object;

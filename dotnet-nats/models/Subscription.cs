@@ -8,22 +8,19 @@ namespace dotnet_nats
 {
     public class Subscription
     {
-		static int sSID = 1;
-    	public Subscription(int sid, string subject, Action<string> handler, string queue = null)
+		static int sID = 1;
+    	public Subscription(int id, string subject, Action<string> handler, string queue = null)
 		{
-			SID = sid;
+			ID = id;
 			Subject = subject;
 			Handler = handler;
-			Queue = queue;
+			Queue = queue ?? " ";
 		}
-    	public Subscription(string subject, Action<string> handler, string queue = null) : this(sSID++, subject, handler, queue)
-		{
-		}
+    	public Subscription(string subject, Action<string> handler, string queue = null) : this(sID++, subject, handler, queue) {}
 	
-		public int SID {get; private set;}
+		public int ID {get; private set;}
 		public string Subject {get; private set;}
 		public Action<string> Handler {get; private set;}
-		public string Queue {get; private set;}
-		
+		public string Queue {get; private set;}		
     }
 }

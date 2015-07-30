@@ -11,6 +11,7 @@ namespace dotnet_nats
         public const string CONNECT = "CONNECT";
         public const string PUB = "PUB";
         public const string SUB = "SUB";
+        public const string UNSUB = "UNSUB";
         public const string MSG = "MSG";
         public const string PONG = "PONG";
         public const string PING = "PING";
@@ -48,6 +49,15 @@ namespace dotnet_nats
             StringBuilder cmd = new StringBuilder();
             cmd.Append(SUB);
             cmd.AppendFormat(" {0} {1} {2}", subject, queue, sid);
+            cmd.Append(CRLF);
+            return cmd.ToString();
+        }
+
+        public static string Unsubscribe(int sid)
+        {
+            StringBuilder cmd = new StringBuilder();
+            cmd.Append(UNSUB);
+            cmd.AppendFormat(" {0} 0", sid);
             cmd.Append(CRLF);
             return cmd.ToString();
         }
