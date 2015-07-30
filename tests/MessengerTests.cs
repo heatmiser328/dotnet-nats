@@ -17,8 +17,7 @@ namespace tests
     public class MessengerTests
     {
         ILog _log;        
-        Options _opts;
-        const string cConnect = @"CONNECT {""verbose"":false,""pedantic"":false}" + "\r\n";
+        Options _opts;        
 
         public MessengerTests()
         {
@@ -59,5 +58,21 @@ namespace tests
             ponged.ShouldBe(true);
         }
 
+        [Fact]
+        public void ReceiveMsg()
+        {
+            const string Message = "This is a message";
+            byte[] payload = Encoding.UTF8.GetBytes(Message + "\r\n");
+            byte[] header = Encoding.UTF8.GetBytes("MSG a 1   " + payload.Length.ToString() + "\r\n");            
+            byte[] msg = header.Concat(payload).ToArray();
+            Messenger msgr = new Messenger(_log);
+			Message message = null;
+            msgr.Msg += (s, a) => { message = a; };
+            msgr.ShouldNotBe(null);
+
+            msgr.Receive(msg, msg.Length);
+            message.Data.ShouldBe(Message);
+        }
+		
     }
 }

@@ -13,7 +13,7 @@ x Publish
 
 x Subscribe
 
-o Receive message for subscription
+x Receive message for subscription
 
 o Resubscribe after reconnect
 

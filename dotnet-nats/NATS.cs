@@ -195,6 +195,14 @@ namespace dotnet_nats
 		void connectMessenger()
 		{
 			_msgr.Msg += (s,e) => {
+                // find the subscribers to this message
+                var subs = _subscriptions.Where(x => x.Value.ID == e.SubscriptionID);
+                foreach (var kvp in subs)
+                {
+                    var sub = kvp.Value;
+                    if (sub != null && sub.Handler != null)
+                        sub.Handler(e.Data);
+                }
 			};
 			_msgr.Ping += (s,e) => {
 				try

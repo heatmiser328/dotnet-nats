@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats
 {
-    public static class Message
+    public class Message
     {
         public const string CONNECT = "CONNECT";
         public const string PUB = "PUB";
@@ -19,6 +19,12 @@ namespace dotnet_nats
         public const string ERR = "-ERR";
         public const string OK = "+OK";
         public const string CRLF = "\r\n";
+		
+		public string Subject {get; set;}
+		public int SubscriptionID {get; set;}
+		public string ReplyTo {get; set;}
+		public int Size {get; set;}
+		public string Data {get; set;}
 
         public static string Connect(Options opts)
         {
@@ -70,6 +76,23 @@ namespace dotnet_nats
         public static string Pong()
         {
             return PONG + CRLF;
+        }
+
+        public static Message Parse(string s)
+        {
+            const string cPattern = @"^MSG\s+([^\s\r\n]+)\s+([^\s\r\n]+)\s+(([^\s\r\n]+)[^\S\r\n]+)?(\d+)\r\n";
+            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex(cPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var matches = regex.Matches(s);
+            if (matches == null || matches.Count < 1)
+                return null;
+            var groups = matches[0].Groups;
+            var msg = new Message();
+            msg.Subject = groups.Count > 1 ? groups[1].Value : string.Empty;
+            msg.SubscriptionID = groups.Count > 2 ? Int32.Parse(groups[2].Value) : -1;
+            msg.ReplyTo = groups.Count > 4 ? groups[4].Value : string.Empty;
+            msg.Size = groups.Count > 5 ? Int32.Parse(groups[5].Value) : 0;
+
+            return msg;
         }
 
     }

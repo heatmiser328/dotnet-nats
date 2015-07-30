@@ -8,7 +8,7 @@ namespace dotnet_nats
 {
     public interface IMessenger
     {
-		event EventHandler Msg;
+		event EventHandler<Message> Msg;
 		event EventHandler Ping;
 		event EventHandler Pong;
 		event EventHandler Info;

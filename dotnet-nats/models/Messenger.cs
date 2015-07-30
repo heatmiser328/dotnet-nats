@@ -14,6 +14,7 @@ namespace dotnet_nats
         ReceiveStatus _receiveStatus;
         List<byte> _buffer;
         object _lock;
+		ConcurrentQueue<Message> _pending;
 
         public Messenger(ILog log)
         {            
@@ -21,9 +22,10 @@ namespace dotnet_nats
             _receiveStatus = ReceiveStatus.AWAITING_CONTROL;
             _buffer = new List<byte>();
             _lock = new object();
+			_pending = new ConcurrentQueue<Message>();
         }
 
-		public event EventHandler Msg;
+		public event EventHandler<Message> Msg;
 		public event EventHandler Ping;
 		public event EventHandler Pong;
 		public event EventHandler Info;
@@ -40,22 +42,23 @@ namespace dotnet_nats
                     lock (_lock)
                     {
                         _buffer.AddRange(data.Take(clsize));
-                        if (_receiveStatus == ReceiveStatus.AWAITING_CONTROL)
+                        // loop over buffer, retrieving each "operation" from it
+                        string op = null;
+                        while ((op = nextOp(_buffer)) != null)
                         {
-                            // loop over buffer, retrieving each "operation" from it
-                            string op = null;
-                            while ((op = nextOp(_buffer)) != null)
+                            if (_receiveStatus == ReceiveStatus.AWAITING_CONTROL)
                             {
                                 _log.Trace("OP: {0}", op);
                                 if (op.StartsWith(Message.MSG))
                                 {
-                                    _log.Debug("Message");
-									RaiseMessage(op);
+                                    _log.Debug("MSG");
+                                    _pending.Enqueue(Message.Parse(op));
+                                    _receiveStatus = ReceiveStatus.AWAITING_PAYLOAD;
                                 }
                                 else if (op.StartsWith(Message.PING))
                                 {
                                     _log.Debug("PING");
-									RaisePing();
+                                    RaisePing();
                                 }
                                 else if (op.StartsWith(Message.PONG))
                                 {
@@ -69,22 +72,29 @@ namespace dotnet_nats
                                 else if (op.StartsWith(Message.ERR))
                                 {
                                     _log.Debug("Error");
-									RaiseError();
+                                    RaiseError();
                                 }
                                 else if (op.StartsWith(Message.INFO))
                                 {
                                     _log.Debug("Info");
-									RaiseInfo();
+                                    RaiseInfo();
                                 }
                                 else
                                 {
-                                    _log.Warn("Unkown control received: {0}", op);
+                                    _log.Warn("Unknown control received: {0}", op);
                                 }
                             }
-                        }
-                        else if (_receiveStatus == ReceiveStatus.AWAITING_PAYLOAD)
-                        {
-
+                            else if (_receiveStatus == ReceiveStatus.AWAITING_PAYLOAD)
+                            {
+                                _log.Debug(op);
+                                Message msg;
+                                if (_pending.TryDequeue(out msg))
+                                {
+                                    msg.Data = op.Remove(op.LastIndexOf(Message.CRLF), Message.CRLF.Length);
+                                    RaiseMessage(msg);
+                                }
+                                _receiveStatus = ReceiveStatus.AWAITING_CONTROL;
+                            }
                         }
                     }
                 }
@@ -118,12 +128,12 @@ namespace dotnet_nats
 
             return null;
         }
-		
+				
 		#region events
-		void RaiseMessage(string msg)
+		void RaiseMessage(Message msg)
 		{
 			if (Msg != null)
-                Msg(this, EventArgs.Empty);
+                Msg(this, msg);
 		}
 		void RaisePing()
 		{
