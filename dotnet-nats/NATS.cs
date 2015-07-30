@@ -21,6 +21,7 @@ namespace dotnet_nats
         IServer _server;
         IMessenger _msgr;
         IDictionary<string, Subscription> _subscriptions;                
+        ConcurrentQueue<Action<string>> _pongs;
         bool _closing;
         Action<bool> _connecthandler;
         CancellationTokenSource _cancel = new CancellationTokenSource();
@@ -31,7 +32,9 @@ namespace dotnet_nats
             _opts = opts;
             _log = log;
             _subscriptions = new Dictionary<string, Subscription>();
+            _pongs = new ConcurrentQueue<Action<string>>();
             _msgr = _factory.NewMessenger();
+			connectMessenger();
             loadServers();
         }
         public NATS(IFactory factory, Options opts) : this(factory, opts, new log.ConsoleLog()) { }                
@@ -47,6 +50,12 @@ namespace dotnet_nats
         public static INATS Connect(Options opts)
         {
             return NATS.Connect(opts, new log.ConsoleLog());
+        }
+
+        void reconnect()
+        {
+            _log.Debug("Reconnecting to server");
+            new Action(() => { Connect(); }).ExecuteAfter(_opts.reconnectDelay);
         }
         #endregion
 
@@ -84,7 +93,7 @@ namespace dotnet_nats
                 {
                     _log.Info("Disconnecting from Server @ {0}", _server.URL);
                     _closing = true;                    
-                    _server.Close();
+                    _server.Close().Wait();
                 }            
             }
             catch (Exception ex)
@@ -161,8 +170,7 @@ namespace dotnet_nats
             foreach(var sub in _subscriptions)
             {
                 sendSubscription(sub.Value.ID, sub.Value.Subject, sub.Value.Queue);
-            }
-            
+            }            
         }
 
         void sendUnsubscription(int sid)
@@ -172,13 +180,61 @@ namespace dotnet_nats
 
         void sendPing(Action<string> handler)
         {
-            _msgr.Ping(handler);
+            _pongs.Enqueue(handler);
             _server.Send(Message.Ping());
         }
             
+        void sendPong()
+        {
+            _server.Send(Message.Pong());
+        }
+			
         #endregion
 
         #region receive
+		void connectMessenger()
+		{
+			_msgr.Msg += (s,e) => {
+			};
+			_msgr.Ping += (s,e) => {
+				try
+				{
+					sendPong();
+				} 
+				catch (Exception ex)
+				{
+					_log.Error("Failed to process Ping", ex);
+				}
+			};
+			_msgr.Pong += (s,e) => {
+				try
+				{
+		            Action<string> pong;                                    
+		            if (_pongs.TryDequeue(out pong))
+		            {
+		                pong(string.Empty);
+		            }                                    
+				} 
+				catch (Exception ex)
+				{
+					_log.Error("Failed to process Pong", ex);
+				}
+			};
+			_msgr.Info += (s,e) => {
+			};
+			_msgr.Error += (s,e) => {
+                try
+                {
+                    Close();
+                    reconnect();
+                }
+                catch (Exception ex)
+                {
+                    _log.Error("Failed to process Error", ex);
+                }
+            };
+		}
+		
         Task receive()
         {
             return Task.Factory.StartNew(() =>
@@ -214,10 +270,9 @@ namespace dotnet_nats
                 _log.Warn("Disconnected from server @ {0}", s.URL);
                 _cancel.Cancel();
                 if (_connecthandler != null) _connecthandler(false);
-                if (_closing) return;                
+                if (_closing) return;
 
-                _log.Debug("Reconnecting to server @ {0}", s.URL);                
-                new Action(() => { Connect(); }).ExecuteAfter(_opts.reconnectDelay);
+                reconnect();
             };
             s.Error += (sender, err) =>
             {

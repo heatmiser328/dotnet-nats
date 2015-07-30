@@ -146,9 +146,8 @@ namespace tests
             _server.Received(2).Open();
             _server.Received(2).Send(Arg.Is<string>(cConnect));            
             _log.Received(1).Warn("Disconnected from server @ {0}", cURL);
-            _log.Received(1).Debug("Reconnecting to server @ {0}", cURL);
+            _log.Received(1).Debug("Reconnecting to server");
         }
-
 
         [Fact]
         public async Task Close()

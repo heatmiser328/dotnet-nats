@@ -11,7 +11,6 @@ namespace dotnet_nats
     {
         enum ReceiveStatus { AWAITING_CONTROL = 0, AWAITING_PAYLOAD };        
         ILog _log;
-        ConcurrentQueue<Action<string>> _pongs;
         ReceiveStatus _receiveStatus;
         List<byte> _buffer;
         object _lock;
@@ -19,17 +18,17 @@ namespace dotnet_nats
         public Messenger(ILog log)
         {            
             _log = log;
-            _pongs = new ConcurrentQueue<Action<string>>();
             _receiveStatus = ReceiveStatus.AWAITING_CONTROL;
             _buffer = new List<byte>();
             _lock = new object();
         }
 
-        public void Ping(Action<string> handler)
-        {
-            _pongs.Enqueue(handler);
-        }
-
+		public event EventHandler Msg;
+		public event EventHandler Ping;
+		public event EventHandler Pong;
+		public event EventHandler Info;
+		public event EventHandler Error;
+		
         public void Receive(byte[] data, int size)
         {
             byte[] cldata = data;
@@ -43,7 +42,7 @@ namespace dotnet_nats
                         _buffer.AddRange(data.Take(clsize));
                         if (_receiveStatus == ReceiveStatus.AWAITING_CONTROL)
                         {
-                            // loop over buffer, retrieing each "operation" from it
+                            // loop over buffer, retrieving each "operation" from it
                             string op = null;
                             while ((op = nextOp(_buffer)) != null)
                             {
@@ -51,19 +50,17 @@ namespace dotnet_nats
                                 if (op.StartsWith(Message.MSG))
                                 {
                                     _log.Debug("Message");
+									RaiseMessage(op);
                                 }
                                 else if (op.StartsWith(Message.PING))
                                 {
                                     _log.Debug("PING");
+									RaisePing();
                                 }
                                 else if (op.StartsWith(Message.PONG))
                                 {
                                     _log.Debug("PONG");
-                                    Action<string> pong;                                    
-                                    if (_pongs.TryDequeue(out pong))
-                                    {
-                                        pong(op);
-                                    }                                    
+                                    RaisePong();
                                 }
                                 else if (op.StartsWith(Message.OK))
                                 {
@@ -72,10 +69,12 @@ namespace dotnet_nats
                                 else if (op.StartsWith(Message.ERR))
                                 {
                                     _log.Debug("Error");
+									RaiseError();
                                 }
                                 else if (op.StartsWith(Message.INFO))
                                 {
                                     _log.Debug("Info");
+									RaiseInfo();
                                 }
                                 else
                                 {
@@ -119,6 +118,34 @@ namespace dotnet_nats
 
             return null;
         }
+		
+		#region events
+		void RaiseMessage(string msg)
+		{
+			if (Msg != null)
+                Msg(this, EventArgs.Empty);
+		}
+		void RaisePing()
+		{
+			if (Ping != null)
+				Ping(this, EventArgs.Empty);
+		}
+		void RaisePong()
+		{
+			if (Pong != null)
+				Pong(this, EventArgs.Empty);
+		}
+		void RaiseInfo()
+		{
+			if (Info != null)
+				Info(this, EventArgs.Empty);
+		}
+		void RaiseError()
+		{
+			if (Error != null)
+				Error(this, EventArgs.Empty);
+		}
+		#endregion
     }
 
 }

@@ -34,17 +34,30 @@ namespace tests
         }
 
         [Fact]
+        public void ReceiveControlPing()
+        {
+            byte[] ping = Encoding.UTF8.GetBytes("PING\r\n");
+            var pinged = false;            
+            Messenger msgr = new Messenger(_log);
+            msgr.Ping += (s, a) => { pinged = true; };
+            msgr.ShouldNotBe(null);                        
+
+            msgr.Receive(ping, ping.Length);
+            pinged.ShouldBe(true);
+        }
+
+        [Fact]
         public void ReceiveControlPong()
         {
             byte[] pong = Encoding.UTF8.GetBytes("PONG\r\n");
-
-            Action<string> handler = Substitute.For<Action<string>>();
+            var ponged = false;            
             Messenger msgr = new Messenger(_log);
-            msgr.ShouldNotBe(null);            
-            msgr.Ping(handler);            
+            msgr.Pong += (s, a) => { ponged = true; };
+            msgr.ShouldNotBe(null);
 
             msgr.Receive(pong, pong.Length);
-            handler.ReceivedCalls().Count().ShouldBe(1);
+            ponged.ShouldBe(true);
         }
+
     }
 }

@@ -8,6 +8,10 @@ namespace dotnet_nats.log
 {
     public class ConsoleLog : ILog
     {
+        const string CRLF = "\r\n";
+        const string CRLF_DISPLAY = //"<cr><lf>";
+                                    "\\r\\n";
+
         public ConsoleLog(string level)
         {
             Level = level;
@@ -92,8 +96,13 @@ namespace dotnet_nats.log
 
         void Write(string level, string msg, params object[] args)
         {
-            if (DisplayLevel(level))            
-                Console.Out.WriteLine("{0}: {1,-5}: {2}", DateTime.Now, level, args != null ? string.Format(msg, args) : msg);                
+            if (DisplayLevel(level))
+            {
+                msg = args != null ? string.Format(msg, args) : msg;
+                if (msg.EndsWith(CRLF))
+                    msg = msg.Remove(msg.LastIndexOf(CRLF), CRLF.Length) + CRLF_DISPLAY;
+                Console.Out.WriteLine("{0}: {1,-5}: {2}", DateTime.Now, level, msg);
+            }                                
         }
     }
 }

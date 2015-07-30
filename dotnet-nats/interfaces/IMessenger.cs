@@ -8,7 +8,12 @@ namespace dotnet_nats
 {
     public interface IMessenger
     {
-        void Ping(Action<string> handler);
+		event EventHandler Msg;
+		event EventHandler Ping;
+		event EventHandler Pong;
+		event EventHandler Info;
+		event EventHandler Error;
+		
         void Receive(byte[] data, int size);
     }
 }

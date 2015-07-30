@@ -66,5 +66,11 @@ namespace dotnet_nats
         {
             return PING + CRLF;
         }
+
+        public static string Pong()
+        {
+            return PONG + CRLF;
+        }
+
     }
 }
