@@ -10,6 +10,7 @@ namespace dotnet_nats
     {
         public const string CONNECT = "CONNECT";
         public const string PUB = "PUB";
+        public const string SUB = "SUB";
         public const string MSG = "MSG";
         public const string PONG = "PONG";
         public const string PING = "PING";
@@ -38,6 +39,15 @@ namespace dotnet_nats
             cmd.AppendFormat(" {0} {1}", subject, data.Length);
             cmd.Append(CRLF);
             cmd.AppendFormat(data);
+            cmd.Append(CRLF);
+            return cmd.ToString();
+        }
+
+        public static string Subscribe(int sid, string subject, string queue = " ")
+        {
+            StringBuilder cmd = new StringBuilder();
+            cmd.Append(SUB);
+            cmd.AppendFormat(" {0} {1} {2}", subject, queue, sid);
             cmd.Append(CRLF);
             return cmd.ToString();
         }

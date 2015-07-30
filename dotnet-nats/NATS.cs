@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using dotnet_sockets;
@@ -22,6 +23,7 @@ namespace dotnet_nats
         IDictionary<string, Subscription> _subscriptions;                
         bool _closing;
         Action<bool> _connecthandler;
+        CancellationTokenSource _cancel = new CancellationTokenSource();
 
         public NATS(IFactory factory, Options opts, ILog log)
         {
@@ -81,7 +83,7 @@ namespace dotnet_nats
                 if (_server != null)
                 {
                     _log.Info("Disconnecting from Server @ {0}", _server.URL);
-                    _closing = true;
+                    _closing = true;                    
                     _server.Transport.Close();
                 }            
             }
@@ -114,10 +116,9 @@ namespace dotnet_nats
         }
 
         public void Subscribe(string subject, Action<string> handler)
-        {
-            throw new NotImplementedException();
-            //_subscriptions[subject] = new Subscription(subject, handler);
-            // send to server
+        {            
+            _subscriptions[subject] = new Subscription(subject, handler);
+            sendSubscription(_subscriptions[subject].SID, subject);
         }
 
         public void Unsubscribe(string subject)
@@ -145,12 +146,30 @@ namespace dotnet_nats
             _server.Transport.Send(Message.Publish(subject, data));
         }
 
+        void sendSubscription(int sid, string subject)
+        {
+            _server.Transport.Send(Message.Subscribe(sid, subject));
+        }
+
         void sendPing(Action<string> handler)
         {
             _msgr.Ping(handler);
             _server.Transport.Send(Message.Ping());
         }
             
+        #endregion
+
+        #region receive
+        Task receive()
+        {
+            return Task.Factory.StartNew(() =>
+            {                                
+                while (!_closing && _server.Connected)
+                {
+                    _server.Transport.Receive().Wait(_cancel.Token);
+                }
+            });
+        }
         #endregion
 
         #region servers
@@ -167,12 +186,14 @@ namespace dotnet_nats
             s.Transport.Connected += (sender, b) =>
             {
                 _log.Debug("Connected to server @ {0}", s.URL);
-                sendConnect();
+                sendConnect();                
                 if (_connecthandler != null) _connecthandler(true);
+                receive();
             };
             s.Transport.Disconnected += (sender, b) =>
             {
                 _log.Warn("Disconnected from server @ {0}", s.URL);
+                _cancel.Cancel();
                 if (_connecthandler != null) _connecthandler(false);
                 if (_closing) return;                
 

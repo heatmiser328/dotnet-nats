@@ -45,7 +45,6 @@
     <Compile Include="interfaces\IMessenger.cs" />
     <Compile Include="interfaces\INATS.cs" />
     <Compile Include="interfaces\IServer.cs" />
-    <Compile Include="interfaces\ITransport.cs" />
     <Compile Include="log\ConsoleLog.cs">
       <SubType>
       </SubType>
@@ -55,7 +54,6 @@
     <Compile Include="models\Messenger.cs" />
     <Compile Include="models\Options.cs" />
     <Compile Include="models\Server.cs" />
-    <Compile Include="models\TcpTransport.cs" />
     <Compile Include="NATS.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="models\Subscription.cs" />

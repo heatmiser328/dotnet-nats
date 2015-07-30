@@ -2,13 +2,21 @@
 NATS client for .NET
 
 Lots to do...
+
 x Connect
+
 x Reconnect
+
 x Disconnect
-o Publish
+
+x Publish
+
 o Subscribe
+
 o Resubscribe after reconnect
+
 o Clustered servers
+
 o Anything else I can't remember right now...
 
 

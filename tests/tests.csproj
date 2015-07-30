@@ -64,6 +64,7 @@
     <Compile Include="PublishTests.cs" />
     <Compile Include="MessengerTests.cs" />
     <Compile Include="FactoryTest.cs" />
+    <Compile Include="SubscribeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

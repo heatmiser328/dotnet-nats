@@ -9,9 +9,7 @@ namespace dotnet_nats
     public interface IFactory
     {
         IServer NewServer(string url);
-        ICollection<IServer> NewServer(string[] urls);
-
-        ITransport NewTransport(string address, int port);
+        ICollection<IServer> NewServer(string[] urls);        
 
         IMessenger NewMessenger();
     }

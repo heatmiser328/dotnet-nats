@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using dotnet_sockets;
+
 namespace dotnet_nats
 {
     public interface IServer
@@ -13,6 +15,17 @@ namespace dotnet_nats
         int Port { get; }
         bool Connected { get; }
         int ReconnectAttempts { get; set; }
-        ITransport Transport { get; }
+
+        event EventHandler<EventArgs<bool>> Connected;        
+        event EventHandler<EventArgs<bool>> Disconnected;
+        event EventHandler<EventArgs<Exception>> Error;
+        event EventHandler<EventArgs<int>> Sent;
+        event EventHandler<SocketDataArgs> ReceivedData;              
+
+        Task<bool> Open();
+        Task<bool> Close();
+        Task<int> Send(string data);
+        Task<int> Flush();
+        Task<byte[]> Receive();
     }
 }

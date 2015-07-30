@@ -20,12 +20,10 @@ namespace dotnet_nats
             if (Uri.IsWellFormedUriString(url, UriKind.Absolute))
             {
                 UriBuilder uri = new UriBuilder(url);
-                return new Server
-                {
+                return new Server(_log) {
                     URL = url,
                     Address = uri.Host,
-                    Port = uri.Port,
-                    Transport = NewTransport(uri.Host, uri.Port)
+                    Port = uri.Port
                 };
             }
             return null;            
@@ -44,16 +42,6 @@ namespace dotnet_nats
                 servers.Add(NewServer(url));
             }
             return servers;            
-        }
-
-        public virtual ITransport NewTransport(string address, int port)
-        {
-            ITransport t = new TcpTransport(address, port);
-            t.Log += (sender, args) =>
-            {
-                _log.Log(args.Level, args.Message, args.Exception, args.Args);
-            };
-            return t;
         }
 
         public IMessenger NewMessenger()
