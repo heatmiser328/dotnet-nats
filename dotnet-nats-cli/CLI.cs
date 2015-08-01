@@ -34,7 +34,7 @@ namespace dotnet_nats_cli
             INATS nats = null;
             try
             {
-                ILog log = new dotnet_nats.log.ConsoleLog();                
+                ILog log = new dotnet_nats.log.Logger();                
                 IFactory f = new Factory(log);
                 nats = new NATS(f, opts, log);
                 var t = nats.Connect();

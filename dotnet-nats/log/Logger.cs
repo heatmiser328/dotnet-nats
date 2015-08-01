@@ -6,32 +6,35 @@ using System.Threading.Tasks;
 
 namespace dotnet_nats.log
 {
-    public class ConsoleLog : ILog
+    public class Logger : ILog
     {
         const string CRLF = "\r\n";
-        const string CRLF_DISPLAY = //"<cr><lf>";
+        const string CRLF_DISPLAY = //"<cr><lf>";	
                                     "\\r\\n";
+        IOutput _output;
 
-        public ConsoleLog(string level)
+        public Logger(IOutput output, string level)
         {
+			_output = output;
             Level = level;
         }
-        public ConsoleLog() : this("INFO"){}
+        public Logger(IOutput output) : this(output, "info"){}
+        public Logger() : this(new ConsoleOutput()){}
 
         #region ILog Members
         public string Level { get; set; }
 
         public void Log(string level, string msg, Exception ex = null, params object[] args)
         {
-            if (level.Equals("debug"))
+            if (IsDebug(level))
                 Debug(msg, args);
-            else if (level.Equals("info"))
+            else if (IsInfo(level))
                 Info(msg, args);
-            else if (level.Equals("warn"))
+            else if (IsWarn(level))
                 Warn(msg, args);
-            else if (level.Equals("error"))
+            else if (IsError(level))
                 Error(msg, ex, args);
-            else if (level.Equals("fatal"))
+            else if (IsFatal(level))
                 Fatal(msg, args);
             else
                 Trace(msg, args);
@@ -76,10 +79,44 @@ namespace dotnet_nats.log
         }
 
         #endregion
-
+		
+		bool IsTrace(string level)
+		{
+        	return level.Equals("trace", StringComparison.InvariantCultureIgnoreCase);
+		}
+		bool IsDebug(string level)
+		{
+        	return level.Equals("debug", StringComparison.InvariantCultureIgnoreCase);
+		}
+		bool IsInfo(string level)
+		{
+			return level.Equals("info", StringComparison.InvariantCultureIgnoreCase);
+		}
+		bool IsWarn(string level)
+		{
+			return level.Equals("warn", StringComparison.InvariantCultureIgnoreCase);
+		}
+		bool IsError(string level)
+		{
+			return level.Equals("error", StringComparison.InvariantCultureIgnoreCase);
+		}
+		bool IsFatal(string level)
+		{
+			return level.Equals("fatal", StringComparison.InvariantCultureIgnoreCase);
+		}
+		int logLevel(string level)
+		{
+			if (IsTrace(level)) return 0;
+			if (IsDebug(level)) return 1;
+			if (IsInfo(level)) return 2;
+			if (IsWarn(level)) return 3;
+			if (IsError(level)) return 4;
+			if (IsFatal(level)) return 5;
+			return 6;
+		}
         bool DisplayLevel(string level)
         {
-            return true;
+			return logLevel(level) >= logLevel(this.Level);
         }
 
         string ExceptionMessage(Exception ex)
@@ -101,7 +138,7 @@ namespace dotnet_nats.log
                 msg = args != null ? string.Format(msg, args) : msg;
                 if (msg.EndsWith(CRLF))
                     msg = msg.Remove(msg.LastIndexOf(CRLF), CRLF.Length) + CRLF_DISPLAY;
-                Console.Out.WriteLine("{0}: {1,-5}: {2}", DateTime.Now, level, msg);
+				_output.Out(level, msg);
             }                                
         }
     }

@@ -32,7 +32,7 @@ namespace tests
         [Fact]
         public void New_Single()
         {
-            IFactory factory = Substitute.ForPartsOf<Factory>(_log);            
+            IFactory factory = new Factory(_log);            
 
             IServer server = factory.NewServer(cURL);
             server.ShouldNotBe(null);
@@ -48,7 +48,7 @@ namespace tests
             const string cURL2 = "nats://domain2:8888";
             const string cURL3 = "nats://domain3:1234";
 
-            IFactory factory = Substitute.ForPartsOf<Factory>(_log);            
+            IFactory factory = new Factory(_log);            
 
             ICollection<IServer> servers = factory.NewServer(new string[] {cURL,cURL2,cURL3});
             servers.ShouldNotBe(null);

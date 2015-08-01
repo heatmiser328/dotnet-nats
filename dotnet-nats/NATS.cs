@@ -37,7 +37,7 @@ namespace dotnet_nats
 			connectMessenger();
             loadServers();
         }
-        public NATS(IFactory factory, Options opts) : this(factory, opts, new log.ConsoleLog()) { }                
+        public NATS(IFactory factory, Options opts) : this(factory, opts, new log.Logger()) { }                
         #endregion
 
         #region Connect
@@ -49,7 +49,7 @@ namespace dotnet_nats
         }
         public static INATS Connect(Options opts)
         {
-            return NATS.Connect(opts, new log.ConsoleLog());
+            return NATS.Connect(opts, new log.Logger());
         }
 
         void reconnect()

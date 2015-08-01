@@ -59,6 +59,7 @@
   <ItemGroup>
     <Compile Include="ConnectivityTests.cs" />
     <Compile Include="InstantiateTests.cs" />
+    <Compile Include="LogTests.cs" />
     <Compile Include="MessageTests.cs" />
     <Compile Include="mocks\MockLog.cs" />
     <Compile Include="ControlTests.cs" />

@@ -44,11 +44,14 @@
     <Compile Include="interfaces\ILog.cs" />
     <Compile Include="interfaces\IMessenger.cs" />
     <Compile Include="interfaces\INATS.cs" />
+    <Compile Include="interfaces\IOutput.cs" />
     <Compile Include="interfaces\IServer.cs" />
-    <Compile Include="log\ConsoleLog.cs">
+    <Compile Include="log\Logger.cs" />
+    <Compile Include="log\ConsoleOutput.cs">
       <SubType>
       </SubType>
     </Compile>
+    <Compile Include="log\NullOutput.cs" />
     <Compile Include="models\Extensions.cs" />
     <Compile Include="models\Message.cs" />
     <Compile Include="models\Messenger.cs" />
