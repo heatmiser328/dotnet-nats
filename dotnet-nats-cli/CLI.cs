@@ -31,10 +31,11 @@ namespace dotnet_nats_cli
 
         void run(CLIOptions opts)
         {
+            ILog log = null;
             INATS nats = null;
             try
             {
-                ILog log = new dotnet_nats.log.Logger();                
+                log = new dotnet_nats.log.Logger(opts.loglevel);
                 IFactory f = new Factory(log);
                 nats = new NATS(f, opts, log);
                 var t = nats.Connect();
@@ -51,7 +52,7 @@ namespace dotnet_nats_cli
                     }
                     else
                     {
-                        Console.Out.WriteLine("Unknown mode supplied: {0}", opts.mode);
+                        log.Fatal("Unknown mode supplied: {0}", opts.mode);                        
                     }
                 }
                 else
@@ -59,9 +60,11 @@ namespace dotnet_nats_cli
                     throw new Exception("Failed to connect to server");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                if (log != null)
+                    log.Error("Error processing", ex);
+                //throw;
             }
             finally
             {
@@ -80,7 +83,7 @@ namespace dotnet_nats_cli
             for (int i = 0; i < count && nats.Connected; i++)
             {
                 string msg = string.Format(data, i);
-                log.Debug("NATS Client: Sending {0}", i);
+                log.Info("Sending {0}", i);
                 nats.Publish(subject,msg);
                 //System.Threading.Thread.Sleep(100);//System.Threading.Timeout.Infinite);
             }
@@ -90,7 +93,8 @@ namespace dotnet_nats_cli
         {
             nats.Subscribe(subject, (data) =>
             {
-                log.Debug("Received: {0}", data);
+                log.Info("Received {0}", count);
+                //log.Trace(data);
                 count--;
             });
             while (count > 0) { System.Threading.Thread.Sleep(250); }
@@ -115,7 +119,8 @@ namespace dotnet_nats_cli
             p.Setup(arg => arg.uris)
                 .As('u', "uris")
                 .WithDescription("List of server URIs")
-                .Required();
+                .SetDefault(new List<string> {"nats://localhost:4222"});
+                //.Required();
 
             p.Setup(arg => arg.loglevel)
                 .As('l', "loglevel")

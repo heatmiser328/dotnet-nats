@@ -288,6 +288,7 @@ namespace dotnet_nats
             };
             s.ReceivedData += (sender, args) =>
             {
+                //_log.Trace("[" + Encoding.UTF8.GetString(args.Data, 0, args.Size).Replace("\r", "R").Replace("\n", "N") + "]");                
                 _msgr.Receive(args.Data, args.Size);
             };
             s.Sent += (sender, sent) =>

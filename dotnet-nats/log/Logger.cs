@@ -19,6 +19,7 @@ namespace dotnet_nats.log
             Level = level;
         }
         public Logger(IOutput output) : this(output, "info"){}
+        public Logger(string level) : this(new ConsoleOutput(), level) { }
         public Logger() : this(new ConsoleOutput()){}
 
         #region ILog Members
@@ -135,7 +136,7 @@ namespace dotnet_nats.log
         {
             if (DisplayLevel(level))
             {
-                msg = args != null ? string.Format(msg, args) : msg;
+                msg = args != null && args.Length > 0 ? string.Format(msg, args) : msg;
                 if (msg.EndsWith(CRLF))
                     msg = msg.Remove(msg.LastIndexOf(CRLF), CRLF.Length) + CRLF_DISPLAY;
 				_output.Out(level, msg);
